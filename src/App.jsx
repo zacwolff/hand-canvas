@@ -518,6 +518,25 @@ export default function App() {
         </>
       )}
 
+      <div className="gesture-buttons">
+        <button className="gesture-btn" onClick={stackCards}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="4" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+            <rect x="3" y="2" width="8" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+            <rect x="5" y="0" width="4" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+          </svg>
+          Stack
+        </button>
+        <button className="gesture-btn" onClick={spreadCards}>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+            <rect x="0.5" y="1.5" width="4" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+            <rect x="6" y="1.5" width="4" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+            <rect x="11.5" y="1.5" width="4" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+          </svg>
+          Spread
+        </button>
+      </div>
+
       {!camActive && (
         <div className="launch-panel">
           {error && <div className="launch-error">{error}</div>}

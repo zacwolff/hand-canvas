@@ -184,6 +184,45 @@ body {
   transform: translateX(-50%) scale(1.02);
 }
 
+/* Gesture buttons */
+.gesture-buttons {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+}
+
+.gesture-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 100px;
+  padding: 9px 16px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  transition: background 0.12s ease, transform 0.1s ease, box-shadow 0.12s ease;
+}
+
+.gesture-btn:hover {
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.gesture-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
 /* Launch panel */
 .launch-panel {
   position: fixed;
