@@ -30,14 +30,6 @@ const CARD_DATA = [
   },
   {
     id: 4,
-    title: 'Quick Note',
-    type: 'mini',
-    content: 'Follow up with eng on breakpoints',
-    label: null,
-    date: null,
-  },
-  {
-    id: 5,
     title: 'Motion Principles',
     type: 'note',
     content: 'Spring curves only.\nEase out for entrances.\nNever animate layout shifts.',
@@ -45,7 +37,7 @@ const CARD_DATA = [
     date: 'Jun 18',
   },
   {
-    id: 6,
+    id: 5,
     title: 'Brand Refresh',
     type: 'image',
     content: 'Visual Identity',
@@ -53,7 +45,7 @@ const CARD_DATA = [
     date: 'May 30',
   },
   {
-    id: 7,
+    id: 6,
     title: 'Accessibility Audit',
     type: 'note',
     content: 'Color contrast failing on 3 components.\nKeyboard nav missing in modal.\nTarget: WCAG AA.',
@@ -61,15 +53,7 @@ const CARD_DATA = [
     date: 'Jun 10',
   },
   {
-    id: 8,
-    title: 'Sprint Goals',
-    type: 'mini',
-    content: 'Ship nav redesign by Friday',
-    label: null,
-    date: null,
-  },
-  {
-    id: 9,
+    id: 7,
     title: 'Component Audit',
     type: 'note',
     content: 'Consolidate 4 button variants → 2.\nRemove deprecated Alert.\nDocument all props.',
@@ -77,15 +61,7 @@ const CARD_DATA = [
     date: 'Jun 17',
   },
   {
-    id: 10,
-    title: 'User Interview #4',
-    type: 'note',
-    content: 'Users miss the old nav.\nSearch is the #1 pain point.\nWant more keyboard shortcuts.',
-    label: 'Review',
-    date: 'Jun 14',
-  },
-  {
-    id: 11,
+    id: 8,
     title: 'Exploration · Nav',
     type: 'image',
     content: 'Navigation',
@@ -93,23 +69,15 @@ const CARD_DATA = [
     date: 'Jun 8',
   },
   {
-    id: 12,
+    id: 9,
     title: 'Ship it',
     type: 'mini',
-    content: 'Don\'t let perfect block good',
+    content: "Don't let perfect block good",
     label: null,
     date: null,
   },
   {
-    id: 13,
-    title: 'Dark Mode Pass',
-    type: 'note',
-    content: 'Semantic color tokens only.\nNo hardcoded hex in components.\nTest with system preference.',
-    label: 'Design',
-    date: 'Jun 16',
-  },
-  {
-    id: 14,
+    id: 10,
     title: 'Onboarding Flow',
     type: 'note',
     content: 'Step 1: value prop.\nStep 2: first action.\nStep 3: aha moment.\nDrop-off at step 2.',
@@ -117,36 +85,12 @@ const CARD_DATA = [
     date: 'Jun 11',
   },
   {
-    id: 15,
-    title: 'Type Scale · v3',
-    type: 'image',
-    content: 'Typography',
-    label: 'Archive',
-    date: 'May 22',
-  },
-  {
-    id: 16,
+    id: 11,
     title: 'Focus',
     type: 'mini',
     content: 'One thing per sprint',
     label: null,
     date: null,
-  },
-  {
-    id: 17,
-    title: 'Icon Library',
-    type: 'note',
-    content: '240 icons audited.\nReduce to 80 core set.\nOutline style only, 20px grid.',
-    label: 'Design',
-    date: 'Jun 13',
-  },
-  {
-    id: 18,
-    title: 'Handoff Checklist',
-    type: 'note',
-    content: 'Specs exported.\nTokens documented.\nEdge cases annotated.\nDev sync scheduled.',
-    label: 'Event',
-    date: 'Jun 19',
   },
 ]
 
@@ -174,7 +118,7 @@ function shuffle(arr) {
 function makeCards() {
   const cx = window.innerWidth  / 2 - CARD_W / 2
   const cy = window.innerHeight / 2 - CARD_H / 2
-  const rotations = [-8,-5,-3,-1,1,3,5,7,-6,-4,-2,0,2,4,6,-7,-3,2]
+  const rotations = [-7,-4,-1,2,5,-5,-2,1,4,-3,3]
   return shuffle(CARD_DATA).map((c, i) => ({
     ...c,
     x: cx,
@@ -376,7 +320,7 @@ export default function App() {
   const stackCards = useCallback(() => {
     const cx = window.innerWidth / 2 - CARD_W / 2
     const cy = window.innerHeight / 2 - CARD_H / 2
-    const rotations = [-8,-5,-3,-1,1,3,5,7,-6,-4,-2,0,2,4,6,-7,-3,2]
+    const rotations = [-7,-4,-1,2,5,-5,-2,1,4,-3,3]
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
       x: cx,
