@@ -1,0 +1,193 @@
+@import "tailwindcss";
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #ece9e3;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
+
+.canvas-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-image: radial-gradient(circle, rgba(0,0,0,0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Cards */
+.card {
+  position: absolute;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+  padding: 14px 16px;
+  width: 220px;
+  cursor: grab;
+  user-select: none;
+  transition: box-shadow 0.15s ease, transform 0.12s ease;
+  will-change: transform;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.06);
+}
+
+.card.dragging {
+  cursor: grabbing;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.16), 0 0 0 1px rgba(0,0,0,0.08);
+  transform: scale(1.02) rotate(0.8deg);
+  z-index: 999;
+}
+
+.card-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111;
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+
+.card-content {
+  font-size: 12px;
+  color: #777;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.card-image {
+  width: 100%;
+  height: 110px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #d4cfc9 0%, #c8c2bb 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-date {
+  font-size: 10px;
+  color: #ccc;
+  margin-top: 10px;
+}
+
+.card-mini {
+  width: 160px;
+}
+
+/* Hand cursor */
+.hand-cursor {
+  position: fixed;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.12);
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 9999;
+  transition: transform 0.06s ease, background 0.08s ease, border-color 0.08s ease;
+}
+
+.hand-cursor.pinching {
+  background: rgba(0, 0, 0, 0.45);
+  border-color: rgba(0, 0, 0, 0.7);
+  transform: translate(-50%, -50%) scale(0.55);
+}
+
+/* Webcam */
+.webcam-preview {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 148px;
+  height: 84px;
+  border-radius: 10px;
+  object-fit: cover;
+  transform: scaleX(-1);
+  opacity: 0.55;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+
+.webcam-hidden {
+  display: none;
+}
+
+/* Activate button */
+.activate-btn {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 20, 0.88);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  padding: 11px 22px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 450;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  z-index: 100;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.activate-btn:hover {
+  background: rgba(0, 0, 0, 0.95);
+  transform: translateX(-50%) scale(1.02);
+}
+
+/* Status dot */
+.status {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 100px;
+  padding: 6px 14px 6px 10px;
+  font-size: 12px;
+  color: #555;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
