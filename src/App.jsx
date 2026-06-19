@@ -64,6 +64,8 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(0)
   const [error, setError] = useState(null)
+  const [deadzone, setDeadzone] = useState(10)
+  const [smooth, setSmooth] = useState(0.1)
 
   const cardsRef = useRef(INITIAL_CARDS)
   const dragInfoRef = useRef(null)
@@ -173,11 +175,9 @@ export default function App() {
       const dx = rawX - smoothPosRef.current.x
       const dy = rawY - smoothPosRef.current.y
       const dist = Math.hypot(dx, dy)
-      // Deadzone: ignore micro-jitter under 10px; smooth larger movements
-      if (dist > 10) {
-        const SMOOTH = 0.1
-        smoothPosRef.current.x += dx * SMOOTH
-        smoothPosRef.current.y += dy * SMOOTH
+      if (dist > deadzone) {
+        smoothPosRef.current.x += dx * smooth
+        smoothPosRef.current.y += dy * smooth
       }
       const x = smoothPosRef.current.x
       const y = smoothPosRef.current.y
@@ -236,7 +236,7 @@ export default function App() {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
     }
-  }, [camActive, stackCards])
+  }, [camActive, stackCards, deadzone, smooth])
 
   const handleMouseDown = useCallback((cardId, e) => {
     e.preventDefault()
@@ -319,10 +319,22 @@ export default function App() {
       />
 
       {camActive && (
-        <div className="status">
-          <div className="status-dot" />
-          Open palm to stack · Pinch to drag
-        </div>
+        <>
+          <div className="status">
+            <div className="status-dot" />
+            Open palm to stack · Pinch to drag
+          </div>
+          <div className="settings-panel">
+            <div className="settings-row">
+              <label>Deadzone <span>{deadzone}px</span></label>
+              <input type="range" min="0" max="30" value={deadzone} onChange={e => setDeadzone(+e.target.value)} />
+            </div>
+            <div className="settings-row">
+              <label>Smoothing <span>{Math.round((1 - smooth) * 100)}%</span></label>
+              <input type="range" min="0.05" max="0.6" step="0.01" value={smooth} onChange={e => setSmooth(+e.target.value)} />
+            </div>
+          </div>
+        </>
       )}
 
       {!camActive && (
