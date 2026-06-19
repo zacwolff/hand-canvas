@@ -61,14 +61,13 @@ function shuffle(arr) {
 }
 
 function makeCards() {
-  // Start as a stack in center — shuffled order each load
   const cx = window.innerWidth  / 2 - CARD_W / 2
   const cy = window.innerHeight / 2 - CARD_H / 2
-  const rotations = [-6, -2, 3, 7]
+  const rotations = [-5, -1.5, 2.5, 6]
   return shuffle(CARD_DATA).map((c, i) => ({
     ...c,
-    x: cx + (i - 1.5) * 8,
-    y: cy + (i - 1.5) * 5,
+    x: cx,
+    y: cy,
     rotation: rotations[i],
     vx: 0, vy: 0,
   }))
@@ -231,11 +230,11 @@ export default function App() {
   const stackCards = useCallback(() => {
     const cx = window.innerWidth / 2 - CARD_W / 2
     const cy = window.innerHeight / 2 - CARD_H / 2
-    const rotations = [-6, -2, 3, 7]
+    const rotations = [-5, -1.5, 2.5, 6]
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
-      x: cx + (i - 1.5) * 10,
-      y: cy + (i - 1.5) * 6,
+      x: cx,
+      y: cy,
       rotation: rotations[i],
       vx: 0, vy: 0,
     }))
