@@ -97,10 +97,6 @@ const CARD_DATA = [
 const CARD_W = 220
 const CARD_H = 180
 const GESTURE_HOLD_MS = 500
-const FRICTION = 0.82
-const MAX_VEL = 30
-const MIN_VEL = 0.15
-const NUDGE = 0.6
 
 const HAND_CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],
@@ -124,7 +120,6 @@ function makeCards() {
     x: cx,
     y: cy,
     rotation: rotations[i],
-    vx: 0, vy: 0,
   }))
 }
 
@@ -204,83 +199,22 @@ export default function App() {
   const gestureCooldownRef = useRef(false)
   const currentGestureRef = useRef(null)
   const smoothPosRef = useRef(null)
-  const physicsFrameRef = useRef(null)
   const videoRef = useRef(null)
   const overlayCanvasRef = useRef(null)
   const animFrameRef = useRef(null)
   const handLandmarkerRef = useRef(null)
 
-  // Physics loop
-  useEffect(() => {
-    const tick = () => {
-      physicsFrameRef.current = requestAnimationFrame(tick)
-      const draggingCardId = dragInfoRef.current?.cardId
-      let dirty = false
-
-      let next = cardsRef.current.map(card => {
-        if (card.id === draggingCardId) return card
-        let { x, y, vx, vy } = card
-        if (!vx && !vy) return card
-
-        x += vx; y += vy
-        vx *= FRICTION; vy *= FRICTION
-        if (Math.abs(vx) < MIN_VEL) vx = 0
-        if (Math.abs(vy) < MIN_VEL) vy = 0
-
-        const maxX = window.innerWidth  - CARD_W
-        const maxY = window.innerHeight - CARD_H
-        if (x < 0)    { x = 0;    vx =  Math.abs(vx) * 0.35 }
-        if (x > maxX) { x = maxX; vx = -Math.abs(vx) * 0.35 }
-        if (y < 0)    { y = 0;    vy =  Math.abs(vy) * 0.35 }
-        if (y > maxY) { y = maxY; vy = -Math.abs(vy) * 0.35 }
-
-        dirty = true
-        return { ...card, x, y, vx, vy }
-      })
-
-      for (let i = 0; i < next.length; i++) {
-        for (let j = i + 1; j < next.length; j++) {
-          const a = next[i], b = next[j]
-          const dx = (a.x + CARD_W / 2) - (b.x + CARD_W / 2)
-          const dy = (a.y + CARD_H / 2) - (b.y + CARD_H / 2)
-          const ox = CARD_W - Math.abs(dx)
-          const oy = CARD_H - Math.abs(dy)
-          if (ox <= 0 || oy <= 0) continue
-          dirty = true
-          const aDragged = a.id === draggingCardId
-          const bDragged = b.id === draggingCardId
-          if (ox < oy) {
-            const push = ox * NUDGE * Math.sign(dx)
-            if (!aDragged) next[i] = { ...next[i], vx: Math.max(-MAX_VEL, Math.min(MAX_VEL, (next[i].vx || 0) + push)) }
-            if (!bDragged) next[j] = { ...next[j], vx: Math.max(-MAX_VEL, Math.min(MAX_VEL, (next[j].vx || 0) - push)) }
-          } else {
-            const push = oy * NUDGE * Math.sign(dy)
-            if (!aDragged) next[i] = { ...next[i], vy: Math.max(-MAX_VEL, Math.min(MAX_VEL, (next[i].vy || 0) + push)) }
-            if (!bDragged) next[j] = { ...next[j], vy: Math.max(-MAX_VEL, Math.min(MAX_VEL, (next[j].vy || 0) - push)) }
-          }
-        }
-      }
-
-      if (dirty) { cardsRef.current = next; setCards([...next]) }
-    }
-    physicsFrameRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(physicsFrameRef.current)
-  }, [])
-
   const spreadCards = useCallback(() => {
-    const gap = 8
     const n = cardsRef.current.length
-    const cols = Math.min(Math.floor((window.innerWidth - 60) / (CARD_W + gap)), Math.ceil(Math.sqrt(n * 1.6)))
+    const cols = Math.ceil(Math.sqrt(n * 1.6))
     const rows = Math.ceil(n / cols)
-    const totalW = cols * CARD_W + (cols - 1) * gap
-    const totalH = rows * CARD_H + (rows - 1) * gap
-    const startX = (window.innerWidth  - totalW) / 2
-    const startY = Math.max(20, (window.innerHeight - totalH) / 2)
+    const cellW = window.innerWidth / cols
+    const cellH = window.innerHeight / rows
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
-      x: startX + (i % cols) * (CARD_W + gap),
-      y: startY + Math.floor(i / cols) * (CARD_H + gap),
-      rotation: 0, vx: 0, vy: 0,
+      x: (i % cols) * cellW + (cellW - CARD_W) / 2,
+      y: Math.floor(i / cols) * cellH + (cellH - CARD_H) / 2,
+      rotation: 0,
     }))
     cardsRef.current = updated
     setIsAnimating(true)
@@ -307,7 +241,6 @@ export default function App() {
           x: cx[ti] + i * 14,
           y: cy + i * 10,
           rotation: rots[ti][i % rots[ti].length],
-          vx: 0, vy: 0,
         }
       })
     })
@@ -326,7 +259,6 @@ export default function App() {
       x: cx,
       y: cy,
       rotation: rotations[i],
-      vx: 0, vy: 0,
     }))
     cardsRef.current = updated
     setIsAnimating(true)
