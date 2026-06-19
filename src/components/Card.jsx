@@ -1,38 +1,81 @@
-export default function Card({ card, isDragging, isAnimating }) {
+const LABEL_COLORS = {
+  Event:   { bg: '#e8f0fe', text: '#3b5bdb' },
+  Archive: { bg: '#f1f3f5', text: '#868e96' },
+  Review:  { bg: '#fff4e6', text: '#e67700' },
+  Design:  { bg: '#f3e8ff', text: '#7c3aed' },
+}
+
+function NoteCard({ card }) {
+  const labelStyle = LABEL_COLORS[card.label] || { bg: '#f1f3f5', text: '#666' }
+  return (
+    <>
+      <div className="card-header">
+        {card.label && (
+          <span className="card-chip" style={{ background: labelStyle.bg, color: labelStyle.text }}>
+            {card.label}
+          </span>
+        )}
+        {card.date && <span className="card-date">{card.date}</span>}
+      </div>
+      <div className="card-title">{card.title}</div>
+      <div className="card-divider" />
+      {card.content && <div className="card-content">{card.content}</div>}
+    </>
+  )
+}
+
+function ImageCard({ card }) {
+  return (
+    <>
+      <div className="card-image">
+        <div className="card-image-grain" />
+        <div className="card-image-overlay">
+          <span className="card-image-label">{card.content}</span>
+        </div>
+      </div>
+      <div className="card-header" style={{ marginTop: 10 }}>
+        {card.label && (
+          <span className="card-chip" style={{ background: '#f1f3f5', color: '#868e96' }}>
+            {card.label}
+          </span>
+        )}
+        {card.date && <span className="card-date">{card.date}</span>}
+      </div>
+      <div className="card-title" style={{ marginTop: 4 }}>{card.title}</div>
+    </>
+  )
+}
+
+function MiniCard({ card }) {
+  return (
+    <>
+      <div className="card-mini-dot" />
+      <div className="card-title" style={{ fontSize: 12 }}>{card.title}</div>
+      {card.content && <div className="card-content" style={{ fontSize: 11, marginTop: 4 }}>{card.content}</div>}
+    </>
+  )
+}
+
+export default function Card({ card, isAnimating }) {
   const rotation = card.rotation || 0
 
   const style = {
     left: card.x,
     top: card.y,
-    transform: isDragging
-      ? `rotate(${rotation + 1}deg) scale(1.02)`
-      : `rotate(${rotation}deg)`,
+    transform: `rotate(${rotation}deg)`,
     transition: isAnimating
       ? 'left 0.55s cubic-bezier(0.4, 0, 0.2, 1), top 0.55s cubic-bezier(0.4, 0, 0.2, 1), transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)'
-      : isDragging ? 'none' : 'transform 0.2s ease',
-    zIndex: isDragging ? 999 : undefined,
+      : 'transform 0.2s ease',
   }
 
   return (
     <div
-      className={`card ${card.type === 'mini' ? 'card-mini' : ''} ${isDragging ? 'dragging' : ''}`}
+      className={`card ${card.type === 'mini' ? 'card-mini' : ''}`}
       style={style}
     >
-      {card.label && <div className="card-label">{card.label}</div>}
-
-      {card.type === 'image' && (
-        <div className="card-image">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" opacity="0.35">
-            <rect x="3" y="3" width="18" height="18" rx="2" stroke="#555" strokeWidth="1.5" />
-            <circle cx="8.5" cy="8.5" r="1.5" fill="#555" />
-            <path d="M3 16l5-5 4 4 3-3 6 6" stroke="#555" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-      )}
-
-      <div className="card-title">{card.title}</div>
-      {card.content && <div className="card-content">{card.content}</div>}
-      {card.date && <div className="card-date">{card.date}</div>}
+      {card.type === 'image' && <ImageCard card={card} />}
+      {card.type === 'note'  && <NoteCard  card={card} />}
+      {card.type === 'mini'  && <MiniCard  card={card} />}
     </div>
   )
 }

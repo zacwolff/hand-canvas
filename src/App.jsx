@@ -8,7 +8,7 @@ const CARD_DATA = [
     id: 1,
     title: '1:1 Design Catchup',
     type: 'note',
-    content: 'Review the design system updates.\nAlign on component library direction.\nCheck spacing tokens before ship.',
+    content: 'Review token updates.\nAlign on component direction.\nCheck spacing before ship.',
     label: 'Event',
     date: 'Today',
   },
@@ -24,15 +24,15 @@ const CARD_DATA = [
     id: 3,
     title: 'Prototype Review',
     type: 'note',
-    content: 'Ship by end of Q2.\n\nThree things to verify before handoff.\nDesign tokens, spacing, motion.',
+    content: 'Ship by end of Q2.\nVerify: tokens, spacing, motion.\nHandoff checklist pending.',
     label: 'Review',
     date: 'Jun 15',
   },
   {
     id: 4,
-    title: 'Notes',
+    title: 'Quick Note',
     type: 'mini',
-    content: 'Quick capture',
+    content: 'Follow up with eng on breakpoints',
     label: null,
     date: null,
   },
@@ -40,9 +40,41 @@ const CARD_DATA = [
     id: 5,
     title: 'Motion Principles',
     type: 'note',
-    content: 'Spring, not linear.\nEase in for exits, ease out for entrances.\nNever block the user.',
+    content: 'Spring curves only.\nEase out for entrances.\nNever animate layout shifts.',
     label: 'Design',
     date: 'Jun 18',
+  },
+  {
+    id: 6,
+    title: 'Brand Refresh',
+    type: 'image',
+    content: 'Visual Identity',
+    label: 'Archive',
+    date: 'May 30',
+  },
+  {
+    id: 7,
+    title: 'Accessibility Audit',
+    type: 'note',
+    content: 'Color contrast failing on 3 components.\nKeyboard nav missing in modal.\nTarget: WCAG AA.',
+    label: 'Review',
+    date: 'Jun 10',
+  },
+  {
+    id: 8,
+    title: 'Sprint Goals',
+    type: 'mini',
+    content: 'Ship nav redesign by Friday',
+    label: null,
+    date: null,
+  },
+  {
+    id: 9,
+    title: 'Component Audit',
+    type: 'note',
+    content: 'Consolidate 4 button variants → 2.\nRemove deprecated Alert.\nDocument all props.',
+    label: 'Design',
+    date: 'Jun 17',
   },
 ]
 
@@ -70,7 +102,7 @@ function shuffle(arr) {
 function makeCards() {
   const cx = window.innerWidth  / 2 - CARD_W / 2
   const cy = window.innerHeight / 2 - CARD_H / 2
-  const rotations = [-6, -2, 1, 4, 7]
+  const rotations = [-7, -4, -1, 2, 5, 8, -5, 3, -2]
   return shuffle(CARD_DATA).map((c, i) => ({
     ...c,
     x: cx,
@@ -211,15 +243,17 @@ export default function App() {
   }, [])
 
   const spreadCards = useCallback(() => {
-    const n = cardsRef.current.length
-    const totalW = n * CARD_W + (n - 1) * 32
-    const startX = (window.innerWidth - totalW) / 2
-    const cy = window.innerHeight / 2 - CARD_H / 2
-    const yOffsets = [-40, 30, -20, 50] // vary heights for natural feel
+    const cols = 3
+    const gap = 28
+    const totalW = cols * CARD_W + (cols - 1) * gap
+    const rows = Math.ceil(cardsRef.current.length / cols)
+    const totalH = rows * CARD_H + (rows - 1) * gap
+    const startX = (window.innerWidth  - totalW) / 2
+    const startY = (window.innerHeight - totalH) / 2
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
-      x: startX + i * (CARD_W + 32),
-      y: cy + yOffsets[i % yOffsets.length],
+      x: startX + (i % cols) * (CARD_W + gap),
+      y: startY + Math.floor(i / cols) * (CARD_H + gap),
       rotation: 0, vx: 0, vy: 0,
     }))
     cardsRef.current = updated
@@ -231,7 +265,7 @@ export default function App() {
   const stackCards = useCallback(() => {
     const cx = window.innerWidth / 2 - CARD_W / 2
     const cy = window.innerHeight / 2 - CARD_H / 2
-    const rotations = [-6, -2, 1, 4, 7]
+    const rotations = [-7, -4, -1, 2, 5, 8, -5, 3, -2]
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
       x: cx,
