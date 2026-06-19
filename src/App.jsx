@@ -36,9 +36,16 @@ const CARD_DATA = [
     label: null,
     date: null,
   },
+  {
+    id: 5,
+    title: 'Motion Principles',
+    type: 'note',
+    content: 'Spring, not linear.\nEase in for exits, ease out for entrances.\nNever block the user.',
+    label: 'Design',
+    date: 'Jun 18',
+  },
 ]
 
-const PINCH_THRESHOLD = 0.065
 const CARD_W = 220
 const CARD_H = 180
 const GESTURE_HOLD_MS = 500
@@ -63,7 +70,7 @@ function shuffle(arr) {
 function makeCards() {
   const cx = window.innerWidth  / 2 - CARD_W / 2
   const cy = window.innerHeight / 2 - CARD_H / 2
-  const rotations = [-5, -1.5, 2.5, 6]
+  const rotations = [-6, -2, 1, 4, 7]
   return shuffle(CARD_DATA).map((c, i) => ({
     ...c,
     x: cx,
@@ -125,11 +132,9 @@ function drawHandOverlay(canvas, landmarks) {
 export default function App() {
   const [cards, setCards] = useState(() => makeCards())
   const [handPos, setHandPos] = useState(null)
-  const [isPinching, setIsPinching] = useState(false)
   const [gestureProgress, setGestureProgress] = useState(0)
-  const [activeGesture, setActiveGesture] = useState(null) // 'bento' | 'stack' | null
+  const [activeGesture, setActiveGesture] = useState(null)
   const [isAnimating, setIsAnimating] = useState(false)
-  const [draggingId, setDraggingId] = useState(null)
   const [camActive, setCamActive] = useState(false)
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(0)
@@ -138,14 +143,10 @@ export default function App() {
   const [smooth, setSmooth] = useState(0.1)
 
   const cardsRef = useRef(cards)
-  const dragInfoRef = useRef(null)
-  const prevPinchRef = useRef(false)
   const gestureStartRef = useRef(null)
   const gestureCooldownRef = useRef(false)
   const currentGestureRef = useRef(null)
   const smoothPosRef = useRef(null)
-  const dragVelRef = useRef({ vx: 0, vy: 0 })
-  const lastDragPosRef = useRef(null)
   const physicsFrameRef = useRef(null)
   const videoRef = useRef(null)
   const overlayCanvasRef = useRef(null)
@@ -230,7 +231,7 @@ export default function App() {
   const stackCards = useCallback(() => {
     const cx = window.innerWidth / 2 - CARD_W / 2
     const cy = window.innerHeight / 2 - CARD_H / 2
-    const rotations = [-5, -1.5, 2.5, 6]
+    const rotations = [-6, -2, 1, 4, 7]
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
       x: cx,
@@ -290,26 +291,18 @@ export default function App() {
       const canvas = overlayCanvasRef.current
 
       if (!result.landmarks?.length) {
-        setHandPos(null); setIsPinching(false)
+        setHandPos(null)
         setGestureProgress(0); setActiveGesture(null)
         gestureStartRef.current = null; currentGestureRef.current = null
         smoothPosRef.current = null
         if (canvas) drawHandOverlay(canvas, null)
-        if (prevPinchRef.current && dragInfoRef.current) {
-          const { cardId } = dragInfoRef.current
-          const { vx, vy } = dragVelRef.current
-          cardsRef.current = cardsRef.current.map(c => c.id === cardId ? { ...c, vx, vy } : c)
-          dragInfoRef.current = null; setDraggingId(null)
-          prevPinchRef.current = false
-          dragVelRef.current = { vx: 0, vy: 0 }; lastDragPosRef.current = null
-        }
         return
       }
 
       const lm = result.landmarks[0]
       if (canvas) drawHandOverlay(canvas, lm)
 
-      const indexTip = lm[8], thumbTip = lm[4]
+      const indexTip = lm[8]
       const rawX = (1 - indexTip.x) * window.innerWidth
       const rawY = indexTip.y * window.innerHeight
 
@@ -322,81 +315,29 @@ export default function App() {
       }
       const x = smoothPosRef.current.x, y = smoothPosRef.current.y
 
-      const pinchDist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y)
-      const pinching = pinchDist < PINCH_THRESHOLD
-      setHandPos({ x, y }); setIsPinching(pinching)
+      setHandPos({ x, y })
 
-      // Gesture detection
-      if (!pinching) {
-        const palm = isOpenPalm(lm)
-        const fist = !palm && isFist(lm)
-        const gesture = palm ? 'bento' : fist ? 'stack' : null
+      const palm = isOpenPalm(lm)
+      const fist = !palm && isFist(lm)
+      const gesture = palm ? 'spread' : fist ? 'stack' : null
 
-        if (gesture && gesture === currentGestureRef.current) {
-          if (!gestureStartRef.current) gestureStartRef.current = timestamp
-          const progress = Math.min((timestamp - gestureStartRef.current) / GESTURE_HOLD_MS, 1)
-          setGestureProgress(progress)
-          setActiveGesture(gesture)
-          if (progress >= 1 && !gestureCooldownRef.current) {
-            gesture === 'bento' ? spreadCards() : stackCards()
-            gestureCooldownRef.current = true
-            gestureStartRef.current = null
-            setGestureProgress(0); setActiveGesture(null)
-            setTimeout(() => { gestureCooldownRef.current = false }, 1200)
-          }
-        } else {
-          currentGestureRef.current = gesture
-          gestureStartRef.current = gesture ? timestamp : null
-          setGestureProgress(0)
-          setActiveGesture(gesture)
+      if (gesture && gesture === currentGestureRef.current) {
+        if (!gestureStartRef.current) gestureStartRef.current = timestamp
+        const progress = Math.min((timestamp - gestureStartRef.current) / GESTURE_HOLD_MS, 1)
+        setGestureProgress(progress)
+        setActiveGesture(gesture)
+        if (progress >= 1 && !gestureCooldownRef.current) {
+          gesture === 'spread' ? spreadCards() : stackCards()
+          gestureCooldownRef.current = true
+          gestureStartRef.current = null
+          setGestureProgress(0); setActiveGesture(null)
+          setTimeout(() => { gestureCooldownRef.current = false }, 1200)
         }
       } else {
-        currentGestureRef.current = null
-        gestureStartRef.current = null
-        setGestureProgress(0); setActiveGesture(null)
-      }
-
-      // Pinch drag
-      const wasPinching = prevPinchRef.current
-      prevPinchRef.current = pinching
-
-      if (pinching && !wasPinching) {
-        const hit = [...cardsRef.current].reverse().find(c =>
-          x >= c.x && x <= c.x + CARD_W && y >= c.y && y <= c.y + CARD_H
-        )
-        if (hit) {
-          dragInfoRef.current = { cardId: hit.id, offsetX: x - hit.x, offsetY: y - hit.y }
-          dragVelRef.current = { vx: 0, vy: 0 }
-          lastDragPosRef.current = { x, y, t: timestamp }
-          setDraggingId(hit.id)
-        }
-      } else if (!pinching && wasPinching) {
-        if (dragInfoRef.current) {
-          const { cardId } = dragInfoRef.current
-          const { vx, vy } = dragVelRef.current
-          cardsRef.current = cardsRef.current.map(c => c.id === cardId ? { ...c, vx, vy } : c)
-        }
-        dragInfoRef.current = null; setDraggingId(null)
-        dragVelRef.current = { vx: 0, vy: 0 }; lastDragPosRef.current = null
-      }
-
-      if (pinching && dragInfoRef.current) {
-        const { cardId, offsetX, offsetY } = dragInfoRef.current
-        const newX = x - offsetX, newY = y - offsetY
-        if (lastDragPosRef.current) {
-          const dt = timestamp - lastDragPosRef.current.t
-          if (dt > 0) {
-            const rvx = ((newX - lastDragPosRef.current.x) / dt) * 16
-            const rvy = ((newY - lastDragPosRef.current.y) / dt) * 16
-            dragVelRef.current.vx = dragVelRef.current.vx * 0.6 + rvx * 0.4
-            dragVelRef.current.vy = dragVelRef.current.vy * 0.6 + rvy * 0.4
-          }
-        }
-        lastDragPosRef.current = { x: newX, y: newY, t: timestamp }
-        const updated = cardsRef.current.map(c =>
-          c.id === cardId ? { ...c, x: newX, y: newY, vx: 0, vy: 0, rotation: 0 } : c
-        )
-        cardsRef.current = updated; setCards([...updated])
+        currentGestureRef.current = gesture
+        gestureStartRef.current = gesture ? timestamp : null
+        setGestureProgress(0)
+        setActiveGesture(gesture)
       }
     }
 
@@ -407,7 +348,7 @@ export default function App() {
 
   const RING_R = 18
   const RING_C = 2 * Math.PI * RING_R
-  const ringColor = activeGesture === 'bento' ? 'rgba(80,160,255,0.85)' : 'rgba(0,0,0,0.7)'
+  const ringColor = activeGesture === 'spread' ? 'rgba(80,160,255,0.85)' : 'rgba(0,0,0,0.7)'
 
   return (
     <div className="canvas-root">
@@ -415,14 +356,14 @@ export default function App() {
         <Card
           key={card.id}
           card={card}
-          isDragging={draggingId === card.id}
+          isDragging={false}
           isAnimating={isAnimating}
         />
       ))}
 
       {handPos && (
         <div
-          className={`hand-cursor ${isPinching ? 'pinching' : ''} ${activeGesture ? 'gesture' : ''}`}
+          className={`hand-cursor ${activeGesture ? 'gesture' : ''}`}
           style={{ left: handPos.x, top: handPos.y }}
         >
           {gestureProgress > 0 && (
@@ -457,7 +398,7 @@ export default function App() {
         <>
           <div className="status">
             <div className="status-dot" />
-            Open palm → bento · Fist → stack · Pinch → drag
+            Open palm → spread · Fist → stack
           </div>
           <div className="settings-panel">
             <div className="settings-row">
