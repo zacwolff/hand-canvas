@@ -1,19 +1,17 @@
+const TILE_TYPES = new Set(['now-playing', 'media', 'stat', 'home'])
+
 function NowPlayingCard({ card }) {
   return (
     <>
-      <div className="np-bg" style={{ background: card.gradient }} />
-      <div className="np-noise" />
-      <div className="np-inner">
-        <div className="np-label">Now Playing</div>
-        <div className="np-title">{card.title}</div>
-        <div className="np-artist">{card.artist}</div>
-        <div className="np-bar">
-          <div className="np-fill" style={{ width: `${card.progress * 100}%` }} />
-        </div>
-        <div className="np-time">
-          <span>{card.time}</span>
-          <span>{card.duration}</span>
-        </div>
+      <div className="np-label">Now Playing</div>
+      <div className="np-title">{card.title}</div>
+      <div className="np-artist">{card.artist}</div>
+      <div className="np-bar">
+        <div className="np-fill" style={{ width: `${card.progress * 100}%` }} />
+      </div>
+      <div className="np-time">
+        <span>{card.time}</span>
+        <span>{card.duration}</span>
       </div>
     </>
   )
@@ -73,7 +71,7 @@ function HomeCard({ card }) {
     <>
       <div className="widget-label">{card.room}</div>
       <div className="home-temp">{card.temp}<span>°F</span></div>
-      <div className="home-lights-label">{card.lightsOn} of {card.lightsTotal} lights on</div>
+      <div className="home-lights-label">{card.lightsOn} of {card.lightsTotal} on</div>
       <div className="home-lights">
         {lights.map((on, i) => (
           <div key={i} className={`home-light-dot ${on ? 'on' : 'off'}`} />
@@ -86,7 +84,6 @@ function HomeCard({ card }) {
 function StatCard({ card }) {
   return (
     <>
-      <div className="stat-glow" style={{ background: card.accent }} />
       <div className="widget-label">{card.label}</div>
       <div className="stat-value">{card.value}</div>
       <div className="stat-sub">{card.sub}</div>
@@ -108,32 +105,29 @@ function FeedCard({ card }) {
 function MediaCard({ card }) {
   return (
     <>
-      <div className="media-bg" style={{ background: card.gradient }} />
-      <div className="np-noise" />
-      <div className="media-inner">
-        <div className="media-label">{card.label}</div>
-        <div className="media-title">{card.show}</div>
-        <div className="media-ep">{card.episode}</div>
-      </div>
+      <div className="media-label">{card.label}</div>
+      <div className="media-title">{card.show}</div>
+      <div className="media-ep">{card.episode}</div>
     </>
   )
 }
 
 export default function Card({ card, isAnimating }) {
-  const rotation = card.rotation || 0
-  const isGradient = card.type === 'now-playing' || card.type === 'media'
+  const isTile = TILE_TYPES.has(card.type)
+  const tileColor = card.tileColor || card.accent
 
   const style = {
     left: card.x,
     top: card.y,
-    transform: `rotate(${rotation}deg)`,
+    transform: `rotate(${card.rotation || 0}deg)`,
     transition: isAnimating
       ? 'left 0.55s cubic-bezier(0.4, 0, 0.2, 1), top 0.55s cubic-bezier(0.4, 0, 0.2, 1), transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)'
       : 'transform 0.2s ease',
+    ...(isTile && tileColor ? { background: tileColor } : {}),
   }
 
   return (
-    <div className={`card${isGradient ? ' card-gradient' : ''}`} style={style}>
+    <div className={`card${isTile ? ' card-tile' : ''}`} style={style}>
       {card.type === 'now-playing' && <NowPlayingCard card={card} />}
       {card.type === 'weather'     && <WeatherCard    card={card} />}
       {card.type === 'calendar'    && <CalendarCard   card={card} />}

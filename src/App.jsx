@@ -8,7 +8,7 @@ const CARD_DATA = [
     id: 1, type: 'now-playing', group: 1,
     title: 'Midnight Rain', artist: 'Taylor Swift · Midnights',
     progress: 0.38, time: '1:24', duration: '3:44',
-    gradient: 'linear-gradient(145deg, #1a0533 0%, #5b21b6 52%, #db2777 100%)',
+    tileColor: '#5b21b6',
   },
   {
     id: 2, type: 'weather', group: 3,
@@ -35,18 +35,19 @@ const CARD_DATA = [
     id: 5, type: 'home', group: 3,
     room: 'Living Room', temp: '71',
     lightsOn: 3, lightsTotal: 6,
+    tileColor: '#d97706',
   },
   {
     id: 6, type: 'stat', group: 2,
-    label: 'Steps', value: '8,432', sub: 'Goal: 10k', accent: '#34d399',
+    label: 'Steps', value: '8,432', sub: 'Goal: 10k', accent: '#16a34a',
   },
   {
     id: 7, type: 'stat', group: 3,
-    label: 'Unread', value: '23', sub: 'messages', accent: '#818cf8',
+    label: 'Unread', value: '23', sub: 'messages', accent: '#7c3aed',
   },
   {
     id: 8, type: 'stat', group: 2,
-    label: 'Focus', value: '2h 14m', sub: 'today', accent: '#fbbf24',
+    label: 'Focus', value: '2h 14m', sub: 'today', accent: '#2563eb',
   },
   {
     id: 9, type: 'feed', group: 1,
@@ -61,11 +62,11 @@ const CARD_DATA = [
     id: 10, type: 'media', group: 1,
     show: 'Severance', episode: 'S2 · Episode 6',
     label: 'Continue Watching',
-    gradient: 'linear-gradient(145deg, #0a1628 0%, #1e3a5f 55%, #0f2540 100%)',
+    tileColor: '#1c1917',
   },
   {
     id: 11, type: 'stat', group: 3,
-    label: 'Air Quality', value: 'Good', sub: 'AQI 42', accent: '#34d399',
+    label: 'Air Quality', value: 'Good', sub: 'AQI 42', accent: '#0891b2',
   },
 ]
 
