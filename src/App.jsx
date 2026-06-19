@@ -5,7 +5,7 @@ import './index.css'
 
 const INITIAL_CARDS = [
   {
-    id: 1, x: 80, y: 160, rotation: 0,
+    id: 1, x: 80, y: 160, rotation: 0, vx: 0, vy: 0,
     title: '1:1 Design Catchup',
     type: 'note',
     content: 'Review the design system updates.\nAlign on component library direction.\nCheck spacing tokens before ship.',
@@ -13,7 +13,7 @@ const INITIAL_CARDS = [
     date: 'Today',
   },
   {
-    id: 2, x: 380, y: 90, rotation: 0,
+    id: 2, x: 380, y: 90, rotation: 0, vx: 0, vy: 0,
     title: 'Concept · 2017',
     type: 'image',
     content: 'Fantastico',
@@ -21,7 +21,7 @@ const INITIAL_CARDS = [
     date: 'Jun 12',
   },
   {
-    id: 3, x: 660, y: 170, rotation: 0,
+    id: 3, x: 660, y: 170, rotation: 0, vx: 0, vy: 0,
     title: 'Prototype Review',
     type: 'note',
     content: 'Ship by end of Q2.\n\nThree things to verify before handoff.\nDesign tokens, spacing, motion.',
@@ -29,7 +29,7 @@ const INITIAL_CARDS = [
     date: 'Jun 15',
   },
   {
-    id: 4, x: 900, y: 80, rotation: 0,
+    id: 4, x: 900, y: 80, rotation: 0, vx: 0, vy: 0,
     title: 'Notes',
     type: 'mini',
     content: 'Quick capture',
@@ -40,16 +40,19 @@ const INITIAL_CARDS = [
 
 const PINCH_THRESHOLD = 0.065
 const CARD_W = 220
-const CARD_H = 200
+const CARD_H = 180
 const PALM_HOLD_MS = 500
+const FRICTION = 0.82
+const MAX_VEL = 30
+const MIN_VEL = 0.15
+const NUDGE = 0.6
 
 function isOpenPalm(lm) {
-  // All four fingers extended: tip.y < pip.y (higher on screen = smaller Y value)
   return (
-    lm[8].y  < lm[6].y  && // index
-    lm[12].y < lm[10].y && // middle
-    lm[16].y < lm[14].y && // ring
-    lm[20].y < lm[18].y    // pinky
+    lm[8].y  < lm[6].y  &&
+    lm[12].y < lm[10].y &&
+    lm[16].y < lm[14].y &&
+    lm[20].y < lm[18].y
   )
 }
 
@@ -57,7 +60,7 @@ export default function App() {
   const [cards, setCards] = useState(INITIAL_CARDS)
   const [handPos, setHandPos] = useState(null)
   const [isPinching, setIsPinching] = useState(false)
-  const [palmProgress, setPalmProgress] = useState(0) // 0–1 fill as you hold
+  const [palmProgress, setPalmProgress] = useState(0)
   const [isStacking, setIsStacking] = useState(false)
   const [draggingId, setDraggingId] = useState(null)
   const [camActive, setCamActive] = useState(false)
@@ -72,10 +75,83 @@ export default function App() {
   const prevPinchRef = useRef(false)
   const palmStartRef = useRef(null)
   const stackCooldownRef = useRef(false)
-  const smoothPosRef = useRef(null) // smoothed hand position
+  const smoothPosRef = useRef(null)
+  const dragVelRef = useRef({ vx: 0, vy: 0 })
+  const lastDragPosRef = useRef(null)
+  const physicsFrameRef = useRef(null)
   const videoRef = useRef(null)
   const animFrameRef = useRef(null)
   const handLandmarkerRef = useRef(null)
+
+  // Physics loop — always running
+  useEffect(() => {
+    const tick = () => {
+      physicsFrameRef.current = requestAnimationFrame(tick)
+      const draggingCardId = dragInfoRef.current?.cardId
+      let dirty = false
+
+      let next = cardsRef.current.map(card => {
+        if (card.id === draggingCardId) return card
+        let { x, y, vx, vy } = card
+        if (!vx && !vy) return card
+
+        x += vx
+        y += vy
+        vx *= FRICTION
+        vy *= FRICTION
+        if (Math.abs(vx) < MIN_VEL) vx = 0
+        if (Math.abs(vy) < MIN_VEL) vy = 0
+
+        // Bounds — bounce off edges
+        const maxX = window.innerWidth - CARD_W
+        const maxY = window.innerHeight - CARD_H
+        if (x < 0)    { x = 0;    vx = Math.abs(vx) * 0.35 }
+        if (x > maxX) { x = maxX; vx = -Math.abs(vx) * 0.35 }
+        if (y < 0)    { y = 0;    vy = Math.abs(vy) * 0.35 }
+        if (y > maxY) { y = maxY; vy = -Math.abs(vy) * 0.35 }
+
+        dirty = true
+        return { ...card, x, y, vx, vy }
+      })
+
+      // Card-card nudge
+      for (let i = 0; i < next.length; i++) {
+        for (let j = i + 1; j < next.length; j++) {
+          const a = next[i]
+          const b = next[j]
+          const aCx = a.x + CARD_W / 2, aCy = a.y + CARD_H / 2
+          const bCx = b.x + CARD_W / 2, bCy = b.y + CARD_H / 2
+          const dx = aCx - bCx
+          const dy = aCy - bCy
+          const overlapX = CARD_W - Math.abs(dx)
+          const overlapY = CARD_H - Math.abs(dy)
+          if (overlapX <= 0 || overlapY <= 0) continue
+
+          dirty = true
+          const aDragged = a.id === draggingCardId
+          const bDragged = b.id === draggingCardId
+
+          if (overlapX < overlapY) {
+            const push = overlapX * NUDGE * Math.sign(dx)
+            if (!aDragged) next[i] = { ...next[i], vx: Math.max(-MAX_VEL, Math.min(MAX_VEL, (next[i].vx || 0) + push)) }
+            if (!bDragged) next[j] = { ...next[j], vx: Math.max(-MAX_VEL, Math.min(MAX_VEL, (next[j].vx || 0) - push)) }
+          } else {
+            const push = overlapY * NUDGE * Math.sign(dy)
+            if (!aDragged) next[i] = { ...next[i], vy: Math.max(-MAX_VEL, Math.min(MAX_VEL, (next[i].vy || 0) + push)) }
+            if (!bDragged) next[j] = { ...next[j], vy: Math.max(-MAX_VEL, Math.min(MAX_VEL, (next[j].vy || 0) - push)) }
+          }
+        }
+      }
+
+      if (dirty) {
+        cardsRef.current = next
+        setCards([...next])
+      }
+    }
+
+    physicsFrameRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(physicsFrameRef.current)
+  }, [])
 
   const stackCards = useCallback(() => {
     const cx = window.innerWidth / 2 - CARD_W / 2
@@ -87,6 +163,7 @@ export default function App() {
       x: cx + offsets[i] * 1.5,
       y: cy + offsets[i],
       rotation: rotations[i],
+      vx: 0, vy: 0,
     }))
     cardsRef.current = updated
     setIsStacking(true)
@@ -156,10 +233,18 @@ export default function App() {
         setPalmProgress(0)
         palmStartRef.current = null
         smoothPosRef.current = null
-        if (prevPinchRef.current) {
+        // Release with current velocity on hand-lost
+        if (prevPinchRef.current && dragInfoRef.current) {
+          const { cardId } = dragInfoRef.current
+          const { vx, vy } = dragVelRef.current
+          cardsRef.current = cardsRef.current.map(c =>
+            c.id === cardId ? { ...c, vx, vy } : c
+          )
+          dragInfoRef.current = null
           setDraggingId(null)
           prevPinchRef.current = false
-          dragInfoRef.current = null
+          dragVelRef.current = { vx: 0, vy: 0 }
+          lastDragPosRef.current = null
         }
         return
       }
@@ -172,12 +257,12 @@ export default function App() {
       const rawY = indexTip.y * window.innerHeight
 
       if (!smoothPosRef.current) smoothPosRef.current = { x: rawX, y: rawY }
-      const dx = rawX - smoothPosRef.current.x
-      const dy = rawY - smoothPosRef.current.y
-      const dist = Math.hypot(dx, dy)
+      const ddx = rawX - smoothPosRef.current.x
+      const ddy = rawY - smoothPosRef.current.y
+      const dist = Math.hypot(ddx, ddy)
       if (dist > deadzone) {
-        smoothPosRef.current.x += dx * smooth
-        smoothPosRef.current.y += dy * smooth
+        smoothPosRef.current.x += ddx * smooth
+        smoothPosRef.current.y += ddy * smooth
       }
       const x = smoothPosRef.current.x
       const y = smoothPosRef.current.y
@@ -188,7 +273,6 @@ export default function App() {
       setHandPos({ x, y })
       setIsPinching(pinching)
 
-      // Palm gesture detection (only when not pinching)
       if (!pinching && isOpenPalm(lm)) {
         if (!palmStartRef.current) palmStartRef.current = timestamp
         const progress = Math.min((timestamp - palmStartRef.current) / PALM_HOLD_MS, 1)
@@ -205,7 +289,6 @@ export default function App() {
         setPalmProgress(0)
       }
 
-      // Pinch drag
       const wasPinching = prevPinchRef.current
       prevPinchRef.current = pinching
 
@@ -215,17 +298,43 @@ export default function App() {
         )
         if (hit) {
           dragInfoRef.current = { cardId: hit.id, offsetX: x - hit.x, offsetY: y - hit.y }
+          dragVelRef.current = { vx: 0, vy: 0 }
+          lastDragPosRef.current = { x, y, t: timestamp }
           setDraggingId(hit.id)
         }
       } else if (!pinching && wasPinching) {
+        if (dragInfoRef.current) {
+          const { cardId } = dragInfoRef.current
+          const { vx, vy } = dragVelRef.current
+          cardsRef.current = cardsRef.current.map(c =>
+            c.id === cardId ? { ...c, vx, vy } : c
+          )
+        }
         dragInfoRef.current = null
         setDraggingId(null)
+        dragVelRef.current = { vx: 0, vy: 0 }
+        lastDragPosRef.current = null
       }
 
       if (pinching && dragInfoRef.current) {
         const { cardId, offsetX, offsetY } = dragInfoRef.current
+        const newX = x - offsetX
+        const newY = y - offsetY
+
+        // Track velocity
+        if (lastDragPosRef.current) {
+          const dt = timestamp - lastDragPosRef.current.t
+          if (dt > 0) {
+            const rawVx = ((newX - lastDragPosRef.current.x) / dt) * 16
+            const rawVy = ((newY - lastDragPosRef.current.y) / dt) * 16
+            dragVelRef.current.vx = dragVelRef.current.vx * 0.6 + rawVx * 0.4
+            dragVelRef.current.vy = dragVelRef.current.vy * 0.6 + rawVy * 0.4
+          }
+        }
+        lastDragPosRef.current = { x: newX, y: newY, t: timestamp }
+
         const updated = cardsRef.current.map(c =>
-          c.id === cardId ? { ...c, x: x - offsetX, y: y - offsetY, rotation: 0 } : c
+          c.id === cardId ? { ...c, x: newX, y: newY, vx: 0, vy: 0, rotation: 0 } : c
         )
         cardsRef.current = updated
         setCards([...updated])
@@ -248,20 +357,46 @@ export default function App() {
       offsetX: e.clientX - card.x,
       offsetY: e.clientY - card.y,
     }
+    dragVelRef.current = { vx: 0, vy: 0 }
+    lastDragPosRef.current = { x: card.x, y: card.y, t: performance.now() }
     setDraggingId(cardId)
 
     const onMove = (e) => {
       if (!dragInfoRef.current) return
       const { cardId, offsetX, offsetY } = dragInfoRef.current
+      const newX = e.clientX - offsetX
+      const newY = e.clientY - offsetY
+      const now = performance.now()
+
+      if (lastDragPosRef.current) {
+        const dt = now - lastDragPosRef.current.t
+        if (dt > 0) {
+          const rawVx = ((newX - lastDragPosRef.current.x) / dt) * 16
+          const rawVy = ((newY - lastDragPosRef.current.y) / dt) * 16
+          dragVelRef.current.vx = dragVelRef.current.vx * 0.6 + rawVx * 0.4
+          dragVelRef.current.vy = dragVelRef.current.vy * 0.6 + rawVy * 0.4
+        }
+      }
+      lastDragPosRef.current = { x: newX, y: newY, t: now }
+
       const updated = cardsRef.current.map(c =>
-        c.id === cardId ? { ...c, x: e.clientX - offsetX, y: e.clientY - offsetY, rotation: 0 } : c
+        c.id === cardId ? { ...c, x: newX, y: newY, vx: 0, vy: 0, rotation: 0 } : c
       )
       cardsRef.current = updated
       setCards([...updated])
     }
 
     const onUp = () => {
+      if (dragInfoRef.current) {
+        const { cardId } = dragInfoRef.current
+        const { vx, vy } = dragVelRef.current
+        cardsRef.current = cardsRef.current.map(c =>
+          c.id === cardId ? { ...c, vx: Math.max(-MAX_VEL, Math.min(MAX_VEL, vx)), vy: Math.max(-MAX_VEL, Math.min(MAX_VEL, vy)) } : c
+        )
+      }
       dragInfoRef.current = null
+      dragVelRef.current = { vx: 0, vy: 0 }
+      lastDragPosRef.current = null
       setDraggingId(null)
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
@@ -271,7 +406,6 @@ export default function App() {
     window.addEventListener('mouseup', onUp)
   }, [])
 
-  // SVG ring circumference for palm progress indicator
   const RING_R = 18
   const RING_C = 2 * Math.PI * RING_R
 
