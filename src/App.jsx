@@ -72,8 +72,7 @@ const CARD_DATA = [
 const CARD_W = 220
 const CARD_H = 180
 const GESTURE_HOLD_MS = 500
-const SEARCH_TOP = 28   // matches .search-wrap top in CSS
-const SEARCH_H   = 148  // approximate rendered height of search box
+const SEARCH_H = 148  // approximate rendered height of search box
 
 const HAND_CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],
@@ -90,12 +89,16 @@ function shuffle(arr) {
 
 function groupAnchors() {
   const W = window.innerWidth
+  const H = window.innerHeight
   const searchW = Math.min(600, W - 48)
   const sideW = (W - searchW) / 2
+  const searchY = (H - SEARCH_H) / 2
+  const leftX  = Math.max(16, sideW / 2 - CARD_W / 2)
+  const rightX = Math.min(W - CARD_W - 16, W - sideW / 2 - CARD_W / 2)
   return [
-    { x: Math.max(16, sideW / 2 - CARD_W / 2), y: SEARCH_TOP },
-    { x: Math.min(W - CARD_W - 16, W - sideW / 2 - CARD_W / 2), y: SEARCH_TOP },
-    { x: W / 2 - CARD_W / 2, y: SEARCH_TOP + SEARCH_H + 24 },
+    { x: leftX,              y: searchY + (SEARCH_H - CARD_H) / 2 },
+    { x: rightX,             y: searchY + (SEARCH_H - CARD_H) / 2 },
+    { x: W / 2 - CARD_W / 2, y: searchY + SEARCH_H + 24 },
   ]
 }
 
@@ -194,32 +197,41 @@ export default function App() {
 
   const spreadCards = useCallback(() => {
     const W = window.innerWidth
+    const H = window.innerHeight
     const gap = 16
     const searchW = Math.min(600, W - 48)
-    const sideW = (W - searchW) / 2
+    const sideW   = (W - searchW) / 2
+    const searchY = (H - SEARCH_H) / 2
     const n = cardsRef.current.length
     const positions = []
 
+    // Left + right columns, centered vertically on the search box
     const canFitSide = sideW >= CARD_W + 32
-    const perSide = canFitSide ? 2 : 0
-    const leftX  = Math.max(16, sideW / 2 - CARD_W / 2)
-    const rightX = Math.min(W - CARD_W - 16, W - sideW / 2 - CARD_W / 2)
+    const perSide   = canFitSide ? 2 : 0
+    const leftX     = Math.max(16, sideW / 2 - CARD_W / 2)
+    const rightX    = Math.min(W - CARD_W - 16, W - sideW / 2 - CARD_W / 2)
+    const sideBlockH = perSide * CARD_H + Math.max(0, perSide - 1) * gap
+    const sideStartY = searchY + (SEARCH_H - sideBlockH) / 2
 
-    for (let i = 0; i < perSide; i++) {
-      positions.push({ x: leftX,  y: SEARCH_TOP + i * (CARD_H + gap) })
-      positions.push({ x: rightX, y: SEARCH_TOP + i * (CARD_H + gap) })
+    for (let i = 0; i < perSide; i++) positions.push({ x: leftX,  y: sideStartY + i * (CARD_H + gap) })
+    for (let i = 0; i < perSide; i++) positions.push({ x: rightX, y: sideStartY + i * (CARD_H + gap) })
+
+    // Above search: 2 cards centered
+    const aboveCount = 2
+    const aboveW = aboveCount * CARD_W + (aboveCount - 1) * gap
+    for (let i = 0; i < aboveCount; i++) {
+      positions.push({ x: (W - aboveW) / 2 + i * (CARD_W + gap), y: Math.max(8, searchY - CARD_H - gap) })
     }
 
-    const bottomCount = n - perSide * 2
-    const cols = Math.ceil(Math.sqrt(bottomCount * 1.5))
-    const gridW = cols * CARD_W + (cols - 1) * gap
-    const startX = (W - gridW) / 2
-    const startY = SEARCH_TOP + SEARCH_H + gap
-
-    for (let i = 0; i < bottomCount; i++) {
+    // Below search: remaining cards in a responsive centered row
+    const belowCount = n - perSide * 2 - aboveCount
+    const maxCols = Math.floor((W - 32) / (CARD_W + gap))
+    const cols    = Math.min(belowCount, maxCols)
+    const belowW  = cols * CARD_W + (cols - 1) * gap
+    for (let i = 0; i < belowCount; i++) {
       positions.push({
-        x: startX + (i % cols) * (CARD_W + gap),
-        y: startY + Math.floor(i / cols) * (CARD_H + gap),
+        x: (W - belowW) / 2 + (i % cols) * (CARD_W + gap),
+        y: searchY + SEARCH_H + gap + Math.floor(i / cols) * (CARD_H + gap),
       })
     }
 

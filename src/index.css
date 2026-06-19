@@ -361,9 +361,9 @@ body {
 /* Search box */
 .search-wrap {
   position: fixed;
-  top: 28px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 200;
   width: min(600px, calc(100vw - 48px));
 }
