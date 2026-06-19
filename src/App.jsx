@@ -5,92 +5,67 @@ import './index.css'
 
 const CARD_DATA = [
   {
-    id: 1,
-    title: '1:1 Design Catchup',
-    type: 'note',
-    content: 'Review token updates.\nAlign on component direction.\nCheck spacing before ship.',
-    label: 'Event',
-    date: 'Today',
+    id: 1, type: 'now-playing', group: 1,
+    title: 'Midnight Rain', artist: 'Taylor Swift · Midnights',
+    progress: 0.38, time: '1:24', duration: '3:44',
+    gradient: 'linear-gradient(145deg, #1a0533 0%, #5b21b6 52%, #db2777 100%)',
   },
   {
-    id: 2,
-    title: 'Concept · 2017',
-    type: 'image',
-    content: 'Fantastico',
-    label: 'Archive',
-    date: 'Jun 12',
+    id: 2, type: 'weather', group: 3,
+    city: 'New York', temp: '72', unit: '°',
+    condition: 'Partly Cloudy', hi: '78', lo: '64',
   },
   {
-    id: 3,
-    title: 'Prototype Review',
-    type: 'note',
-    content: 'Ship by end of Q2.\nVerify: tokens, spacing, motion.\nHandoff checklist pending.',
-    label: 'Review',
-    date: 'Jun 15',
+    id: 3, type: 'calendar', group: 2,
+    events: [
+      { time: '10:00', title: '1:1 Design Sync', color: '#818cf8' },
+      { time: '14:00', title: 'Prototype Review', color: '#fbbf24' },
+      { time: '17:30', title: 'Team Standup',     color: '#34d399' },
+    ],
   },
   {
-    id: 4,
-    title: 'Motion Principles',
-    type: 'note',
-    content: 'Spring curves only.\nEase out for entrances.\nNever animate layout shifts.',
-    label: 'Design',
-    date: 'Jun 18',
+    id: 4, type: 'tasks', group: 2,
+    items: [
+      'Ship token update PR',
+      'Review Figma components',
+      'Draft client proposal',
+    ],
   },
   {
-    id: 5,
-    title: 'Brand Refresh',
-    type: 'image',
-    content: 'Visual Identity',
-    label: 'Archive',
-    date: 'May 30',
+    id: 5, type: 'home', group: 3,
+    room: 'Living Room', temp: '71',
+    lightsOn: 3, lightsTotal: 6,
   },
   {
-    id: 6,
-    title: 'Accessibility Audit',
-    type: 'note',
-    content: 'Color contrast failing on 3 components.\nKeyboard nav missing in modal.\nTarget: WCAG AA.',
-    label: 'Review',
-    date: 'Jun 10',
+    id: 6, type: 'stat', group: 2,
+    label: 'Steps', value: '8,432', sub: 'Goal: 10k', accent: '#34d399',
   },
   {
-    id: 7,
-    title: 'Component Audit',
-    type: 'note',
-    content: 'Consolidate 4 button variants → 2.\nRemove deprecated Alert.\nDocument all props.',
-    label: 'Design',
-    date: 'Jun 17',
+    id: 7, type: 'stat', group: 3,
+    label: 'Unread', value: '23', sub: 'messages', accent: '#818cf8',
   },
   {
-    id: 8,
-    title: 'Exploration · Nav',
-    type: 'image',
-    content: 'Navigation',
-    label: 'Archive',
-    date: 'Jun 8',
+    id: 8, type: 'stat', group: 2,
+    label: 'Focus', value: '2h 14m', sub: 'today', accent: '#fbbf24',
   },
   {
-    id: 9,
-    title: 'Ship it',
-    type: 'mini',
-    content: "Don't let perfect block good",
-    label: null,
-    date: null,
+    id: 9, type: 'feed', group: 1,
+    title: 'Morning Brief',
+    items: [
+      'Apple unveils new AI features at WWDC',
+      'Design Systems Summit opens in SF',
+      'React 20 canary build now available',
+    ],
   },
   {
-    id: 10,
-    title: 'Onboarding Flow',
-    type: 'note',
-    content: 'Step 1: value prop.\nStep 2: first action.\nStep 3: aha moment.\nDrop-off at step 2.',
-    label: 'Review',
-    date: 'Jun 11',
+    id: 10, type: 'media', group: 1,
+    show: 'Severance', episode: 'S2 · Episode 6',
+    label: 'Continue Watching',
+    gradient: 'linear-gradient(145deg, #0a1628 0%, #1e3a5f 55%, #0f2540 100%)',
   },
   {
-    id: 11,
-    title: 'Focus',
-    type: 'mini',
-    content: 'One thing per sprint',
-    label: null,
-    date: null,
+    id: 11, type: 'stat', group: 3,
+    label: 'Air Quality', value: 'Good', sub: 'AQI 42', accent: '#34d399',
   },
 ]
 
@@ -223,24 +198,23 @@ export default function App() {
   }, [])
 
   const groupCards = useCallback(() => {
-    const types = ['note', 'image', 'mini']
     const cx = [0.22, 0.5, 0.78].map(p => p * window.innerWidth - CARD_W / 2)
     const cy = window.innerHeight / 2 - CARD_H / 2
     const rots = [
-      [-6,-3,0,2,-4,-1,3,-2,1,-5],
-      [-5,-1,3,7],
-      [-4,0,5,-6],
+      [-6,-3,0,2,-4],
+      [-5,-1,3,7,-3],
+      [-4,0,5,-6,-2],
     ]
     const next = [...cardsRef.current]
-    types.forEach((type, ti) => {
-      const group = next.filter(c => c.type === type)
+    ;[1, 2, 3].forEach((g, gi) => {
+      const group = next.filter(c => c.group === g)
       group.forEach((c, i) => {
         const idx = next.findIndex(n => n.id === c.id)
         next[idx] = {
           ...c,
-          x: cx[ti] + i * 14,
+          x: cx[gi] + i * 14,
           y: cy + i * 10,
-          rotation: rots[ti][i % rots[ti].length],
+          rotation: rots[gi][i % rots[gi].length],
         }
       })
     })
@@ -380,7 +354,6 @@ export default function App() {
         <Card
           key={card.id}
           card={card}
-          isDragging={false}
           isAnimating={isAnimating}
         />
       ))}

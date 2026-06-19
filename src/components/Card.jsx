@@ -1,63 +1,127 @@
-const LABEL_COLORS = {
-  Event:   { bg: '#e8f0fe', text: '#3b5bdb' },
-  Archive: { bg: '#f1f3f5', text: '#868e96' },
-  Review:  { bg: '#fff4e6', text: '#e67700' },
-  Design:  { bg: '#f3e8ff', text: '#7c3aed' },
-}
-
-function NoteCard({ card }) {
-  const labelStyle = LABEL_COLORS[card.label] || { bg: '#f1f3f5', text: '#666' }
+function NowPlayingCard({ card }) {
   return (
     <>
-      <div className="card-header">
-        {card.label && (
-          <span className="card-chip" style={{ background: labelStyle.bg, color: labelStyle.text }}>
-            {card.label}
-          </span>
-        )}
-        {card.date && <span className="card-date">{card.date}</span>}
-      </div>
-      <div className="card-title">{card.title}</div>
-      <div className="card-divider" />
-      {card.content && <div className="card-content">{card.content}</div>}
-    </>
-  )
-}
-
-function ImageCard({ card }) {
-  return (
-    <>
-      <div className="card-image">
-        <div className="card-image-grain" />
-        <div className="card-image-overlay">
-          <span className="card-image-label">{card.content}</span>
+      <div className="np-bg" style={{ background: card.gradient }} />
+      <div className="np-noise" />
+      <div className="np-inner">
+        <div className="np-label">Now Playing</div>
+        <div className="np-title">{card.title}</div>
+        <div className="np-artist">{card.artist}</div>
+        <div className="np-bar">
+          <div className="np-fill" style={{ width: `${card.progress * 100}%` }} />
+        </div>
+        <div className="np-time">
+          <span>{card.time}</span>
+          <span>{card.duration}</span>
         </div>
       </div>
-      <div className="card-header" style={{ marginTop: 10 }}>
-        {card.label && (
-          <span className="card-chip" style={{ background: '#f1f3f5', color: '#868e96' }}>
-            {card.label}
-          </span>
-        )}
-        {card.date && <span className="card-date">{card.date}</span>}
-      </div>
-      <div className="card-title" style={{ marginTop: 4 }}>{card.title}</div>
     </>
   )
 }
 
-function MiniCard({ card }) {
+function WeatherCard({ card }) {
   return (
     <>
-      <div className="card-mini-dot" />
-      <div className="card-title" style={{ fontSize: 12 }}>{card.title}</div>
-      {card.content && <div className="card-content" style={{ fontSize: 11, marginTop: 4 }}>{card.content}</div>}
+      <div className="widget-label">{card.city}</div>
+      <div className="weather-temp">
+        {card.temp}<span className="weather-unit">{card.unit}</span>
+      </div>
+      <div className="weather-condition">{card.condition}</div>
+      <div className="weather-hilo">
+        <span className="weather-hi">H: {card.hi}°</span>
+        <span className="weather-lo">L: {card.lo}°</span>
+      </div>
+    </>
+  )
+}
+
+function CalendarCard({ card }) {
+  return (
+    <>
+      <div className="cal-header">
+        <div className="widget-label" style={{ margin: 0 }}>Today</div>
+        <div className="cal-date">Thu, Jun 19</div>
+      </div>
+      {card.events.map((ev, i) => (
+        <div key={i} className="cal-event">
+          <div className="cal-dot" style={{ background: ev.color }} />
+          <div className="cal-event-title">{ev.title}</div>
+          <div className="cal-event-time">{ev.time}</div>
+        </div>
+      ))}
+    </>
+  )
+}
+
+function TasksCard({ card }) {
+  return (
+    <>
+      <div className="widget-label">Focus</div>
+      {card.items.map((item, i) => (
+        <div key={i} className="task-item">
+          <div className="task-circle" />
+          <span>{item}</span>
+        </div>
+      ))}
+    </>
+  )
+}
+
+function HomeCard({ card }) {
+  const lights = Array.from({ length: card.lightsTotal }, (_, i) => i < card.lightsOn)
+  return (
+    <>
+      <div className="widget-label">{card.room}</div>
+      <div className="home-temp">{card.temp}<span>°F</span></div>
+      <div className="home-lights-label">{card.lightsOn} of {card.lightsTotal} lights on</div>
+      <div className="home-lights">
+        {lights.map((on, i) => (
+          <div key={i} className={`home-light-dot ${on ? 'on' : 'off'}`} />
+        ))}
+      </div>
+    </>
+  )
+}
+
+function StatCard({ card }) {
+  return (
+    <>
+      <div className="stat-glow" style={{ background: card.accent }} />
+      <div className="widget-label">{card.label}</div>
+      <div className="stat-value">{card.value}</div>
+      <div className="stat-sub">{card.sub}</div>
+    </>
+  )
+}
+
+function FeedCard({ card }) {
+  return (
+    <>
+      <div className="widget-label">{card.title}</div>
+      {card.items.map((item, i) => (
+        <div key={i} className="feed-item">{item}</div>
+      ))}
+    </>
+  )
+}
+
+function MediaCard({ card }) {
+  return (
+    <>
+      <div className="media-bg" style={{ background: card.gradient }} />
+      <div className="np-noise" />
+      <div className="media-inner">
+        <div className="media-label">{card.label}</div>
+        <div className="media-title">{card.show}</div>
+        <div className="media-ep">{card.episode}</div>
+      </div>
     </>
   )
 }
 
 export default function Card({ card, isAnimating }) {
   const rotation = card.rotation || 0
+  const isGradient = card.type === 'now-playing' || card.type === 'media'
 
   const style = {
     left: card.x,
@@ -69,13 +133,15 @@ export default function Card({ card, isAnimating }) {
   }
 
   return (
-    <div
-      className={`card ${card.type === 'mini' ? 'card-mini' : ''}`}
-      style={style}
-    >
-      {card.type === 'image' && <ImageCard card={card} />}
-      {card.type === 'note'  && <NoteCard  card={card} />}
-      {card.type === 'mini'  && <MiniCard  card={card} />}
+    <div className={`card${isGradient ? ' card-gradient' : ''}`} style={style}>
+      {card.type === 'now-playing' && <NowPlayingCard card={card} />}
+      {card.type === 'weather'     && <WeatherCard    card={card} />}
+      {card.type === 'calendar'    && <CalendarCard   card={card} />}
+      {card.type === 'tasks'       && <TasksCard      card={card} />}
+      {card.type === 'home'        && <HomeCard       card={card} />}
+      {card.type === 'stat'        && <StatCard       card={card} />}
+      {card.type === 'feed'        && <FeedCard       card={card} />}
+      {card.type === 'media'       && <MediaCard      card={card} />}
     </div>
   )
 }
