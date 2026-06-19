@@ -202,6 +202,15 @@ function isFist(lm) {
   )
 }
 
+function isPeaceSign(lm) {
+  return (
+    lm[8].y  < lm[6].y  && // index extended
+    lm[12].y < lm[10].y && // middle extended
+    lm[16].y > lm[13].y && // ring curled
+    lm[20].y > lm[17].y    // pinky curled
+  )
+}
+
 function drawHandOverlay(canvas, landmarks) {
   const ctx = canvas.getContext('2d')
   ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -335,6 +344,29 @@ export default function App() {
     setTimeout(() => setIsAnimating(false), 650)
   }, [])
 
+  const groupCards = useCallback(() => {
+    const types = ['note', 'image', 'mini']
+    const cx = [0.22, 0.5, 0.78].map(p => p * window.innerWidth - CARD_W / 2)
+    const cy = window.innerHeight / 2 - CARD_H / 2
+    const rots = [
+      [-6,-3,0,2,-4,-1,3,-2,1,-5],
+      [-5,-1,3,7],
+      [-4,0,5,-6],
+    ]
+    const next = [...cardsRef.current]
+    types.forEach((type, ti) => {
+      const group = next.filter(c => c.type === type)
+      group.forEach((c, i) => {
+        const idx = next.findIndex(n => n.id === c.id)
+        next[idx] = { ...c, x: cx[ti] + (i % 4) * 3, y: cy + (i % 4) * 2, rotation: rots[ti][i % rots[ti].length], vx: 0, vy: 0 }
+      })
+    })
+    cardsRef.current = next
+    setIsAnimating(true)
+    setCards([...next])
+    setTimeout(() => setIsAnimating(false), 650)
+  }, [])
+
   const stackCards = useCallback(() => {
     const cx = window.innerWidth / 2 - CARD_W / 2
     const cy = window.innerHeight / 2 - CARD_H / 2
@@ -426,7 +458,8 @@ export default function App() {
 
       const palm = isOpenPalm(lm)
       const fist = !palm && isFist(lm)
-      const gesture = palm ? 'spread' : fist ? 'stack' : null
+      const peace = !palm && !fist && isPeaceSign(lm)
+      const gesture = palm ? 'spread' : fist ? 'stack' : peace ? 'group' : null
 
       if (gesture && gesture === currentGestureRef.current) {
         if (!gestureStartRef.current) gestureStartRef.current = timestamp
@@ -434,7 +467,9 @@ export default function App() {
         setGestureProgress(progress)
         setActiveGesture(gesture)
         if (progress >= 1 && !gestureCooldownRef.current) {
-          gesture === 'spread' ? spreadCards() : stackCards()
+          if (gesture === 'spread') spreadCards()
+          else if (gesture === 'stack') stackCards()
+          else if (gesture === 'group') groupCards()
           gestureCooldownRef.current = true
           gestureStartRef.current = null
           setGestureProgress(0); setActiveGesture(null)
@@ -450,12 +485,12 @@ export default function App() {
 
     animFrameRef.current = requestAnimationFrame(detect)
     return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current) }
-  }, [camActive, spreadCards, stackCards, deadzone, smooth])
+  }, [camActive, spreadCards, stackCards, groupCards, deadzone, smooth])
 
 
   const RING_R = 18
   const RING_C = 2 * Math.PI * RING_R
-  const ringColor = activeGesture === 'spread' ? 'rgba(80,160,255,0.85)' : 'rgba(0,0,0,0.7)'
+  const ringColor = activeGesture === 'spread' ? 'rgba(80,160,255,0.85)' : activeGesture === 'group' ? 'rgba(52,199,89,0.85)' : 'rgba(0,0,0,0.7)'
 
   return (
     <div className="canvas-root">
@@ -505,7 +540,7 @@ export default function App() {
         <>
           <div className="status">
             <div className="status-dot" />
-            Open palm → spread · Fist → stack
+            Open palm → spread · Fist → stack · ✌️ → group
           </div>
           <div className="settings-panel">
             <div className="settings-row">
@@ -536,6 +571,17 @@ export default function App() {
             <rect x="11.5" y="1.5" width="4" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
           </svg>
           Spread
+        </button>
+        <button className="gesture-btn" onClick={groupCards}>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+            <rect x="0.5" y="3" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+            <rect x="1.5" y="1.5" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+            <rect x="6.25" y="3" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+            <rect x="7.25" y="1.5" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+            <rect x="12" y="3" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+            <rect x="13" y="1.5" width="3.5" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/>
+          </svg>
+          Group
         </button>
       </div>
 
