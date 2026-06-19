@@ -70,6 +70,7 @@ export default function App() {
   const prevPinchRef = useRef(false)
   const palmStartRef = useRef(null)
   const stackCooldownRef = useRef(false)
+  const smoothPosRef = useRef(null) // smoothed hand position
   const videoRef = useRef(null)
   const animFrameRef = useRef(null)
   const handLandmarkerRef = useRef(null)
@@ -152,6 +153,7 @@ export default function App() {
         setIsPinching(false)
         setPalmProgress(0)
         palmStartRef.current = null
+        smoothPosRef.current = null
         if (prevPinchRef.current) {
           setDraggingId(null)
           prevPinchRef.current = false
@@ -164,8 +166,16 @@ export default function App() {
       const indexTip = lm[8]
       const thumbTip = lm[4]
 
-      const x = (1 - indexTip.x) * window.innerWidth
-      const y = indexTip.y * window.innerHeight
+      const rawX = (1 - indexTip.x) * window.innerWidth
+      const rawY = indexTip.y * window.innerHeight
+
+      // Exponential moving average — smooths jitter without much lag
+      if (!smoothPosRef.current) smoothPosRef.current = { x: rawX, y: rawY }
+      const SMOOTH = 0.18
+      smoothPosRef.current.x += (rawX - smoothPosRef.current.x) * SMOOTH
+      smoothPosRef.current.y += (rawY - smoothPosRef.current.y) * SMOOTH
+      const x = smoothPosRef.current.x
+      const y = smoothPosRef.current.y
 
       const pinchDist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y)
       const pinching = pinchDist < PINCH_THRESHOLD
