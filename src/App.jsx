@@ -404,51 +404,6 @@ export default function App() {
     return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current) }
   }, [camActive, spreadCards, stackCards, deadzone, smooth])
 
-  const handleMouseDown = useCallback((cardId, e) => {
-    e.preventDefault()
-    const card = cardsRef.current.find(c => c.id === cardId)
-    if (!card) return
-    dragInfoRef.current = { cardId, offsetX: e.clientX - card.x, offsetY: e.clientY - card.y }
-    dragVelRef.current = { vx: 0, vy: 0 }
-    lastDragPosRef.current = { x: card.x, y: card.y, t: performance.now() }
-    setDraggingId(cardId)
-
-    const onMove = (e) => {
-      if (!dragInfoRef.current) return
-      const { cardId, offsetX, offsetY } = dragInfoRef.current
-      const newX = e.clientX - offsetX, newY = e.clientY - offsetY
-      const now = performance.now()
-      if (lastDragPosRef.current) {
-        const dt = now - lastDragPosRef.current.t
-        if (dt > 0) {
-          dragVelRef.current.vx = dragVelRef.current.vx * 0.6 + ((newX - lastDragPosRef.current.x) / dt * 16) * 0.4
-          dragVelRef.current.vy = dragVelRef.current.vy * 0.6 + ((newY - lastDragPosRef.current.y) / dt * 16) * 0.4
-        }
-      }
-      lastDragPosRef.current = { x: newX, y: newY, t: now }
-      const updated = cardsRef.current.map(c =>
-        c.id === cardId ? { ...c, x: newX, y: newY, vx: 0, vy: 0, rotation: 0 } : c
-      )
-      cardsRef.current = updated; setCards([...updated])
-    }
-
-    const onUp = () => {
-      if (dragInfoRef.current) {
-        const { cardId } = dragInfoRef.current
-        const { vx, vy } = dragVelRef.current
-        cardsRef.current = cardsRef.current.map(c =>
-          c.id === cardId ? { ...c, vx: Math.max(-MAX_VEL, Math.min(MAX_VEL, vx)), vy: Math.max(-MAX_VEL, Math.min(MAX_VEL, vy)) } : c
-        )
-      }
-      dragInfoRef.current = null; dragVelRef.current = { vx: 0, vy: 0 }
-      lastDragPosRef.current = null; setDraggingId(null)
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [])
 
   const RING_R = 18
   const RING_C = 2 * Math.PI * RING_R
@@ -462,7 +417,6 @@ export default function App() {
           card={card}
           isDragging={draggingId === card.id}
           isAnimating={isAnimating}
-          onMouseDown={(e) => handleMouseDown(card.id, e)}
         />
       ))}
 

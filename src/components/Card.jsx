@@ -1,4 +1,4 @@
-export default function Card({ card, isDragging, isAnimating, onMouseDown }) {
+export default function Card({ card, isDragging, isAnimating }) {
   const rotation = card.rotation || 0
 
   const style = {
@@ -17,7 +17,6 @@ export default function Card({ card, isDragging, isAnimating, onMouseDown }) {
     <div
       className={`card ${card.type === 'mini' ? 'card-mini' : ''} ${isDragging ? 'dragging' : ''}`}
       style={style}
-      onMouseDown={onMouseDown}
     >
       {card.label && <div className="card-label">{card.label}</div>}
 

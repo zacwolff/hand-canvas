@@ -31,7 +31,7 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
   padding: 14px 16px;
   width: 220px;
-  cursor: grab;
+  cursor: default;
   user-select: none;
   transition: box-shadow 0.15s ease, transform 0.12s ease;
   will-change: transform;
@@ -42,7 +42,6 @@ body {
 }
 
 .card.dragging {
-  cursor: grabbing;
   box-shadow: 0 20px 60px rgba(0,0,0,0.16), 0 0 0 1px rgba(0,0,0,0.08);
 }
 
