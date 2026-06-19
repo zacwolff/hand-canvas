@@ -76,6 +76,78 @@ const CARD_DATA = [
     label: 'Design',
     date: 'Jun 17',
   },
+  {
+    id: 10,
+    title: 'User Interview #4',
+    type: 'note',
+    content: 'Users miss the old nav.\nSearch is the #1 pain point.\nWant more keyboard shortcuts.',
+    label: 'Review',
+    date: 'Jun 14',
+  },
+  {
+    id: 11,
+    title: 'Exploration · Nav',
+    type: 'image',
+    content: 'Navigation',
+    label: 'Archive',
+    date: 'Jun 8',
+  },
+  {
+    id: 12,
+    title: 'Ship it',
+    type: 'mini',
+    content: 'Don\'t let perfect block good',
+    label: null,
+    date: null,
+  },
+  {
+    id: 13,
+    title: 'Dark Mode Pass',
+    type: 'note',
+    content: 'Semantic color tokens only.\nNo hardcoded hex in components.\nTest with system preference.',
+    label: 'Design',
+    date: 'Jun 16',
+  },
+  {
+    id: 14,
+    title: 'Onboarding Flow',
+    type: 'note',
+    content: 'Step 1: value prop.\nStep 2: first action.\nStep 3: aha moment.\nDrop-off at step 2.',
+    label: 'Review',
+    date: 'Jun 11',
+  },
+  {
+    id: 15,
+    title: 'Type Scale · v3',
+    type: 'image',
+    content: 'Typography',
+    label: 'Archive',
+    date: 'May 22',
+  },
+  {
+    id: 16,
+    title: 'Focus',
+    type: 'mini',
+    content: 'One thing per sprint',
+    label: null,
+    date: null,
+  },
+  {
+    id: 17,
+    title: 'Icon Library',
+    type: 'note',
+    content: '240 icons audited.\nReduce to 80 core set.\nOutline style only, 20px grid.',
+    label: 'Design',
+    date: 'Jun 13',
+  },
+  {
+    id: 18,
+    title: 'Handoff Checklist',
+    type: 'note',
+    content: 'Specs exported.\nTokens documented.\nEdge cases annotated.\nDev sync scheduled.',
+    label: 'Event',
+    date: 'Jun 19',
+  },
 ]
 
 const CARD_W = 220
@@ -102,7 +174,7 @@ function shuffle(arr) {
 function makeCards() {
   const cx = window.innerWidth  / 2 - CARD_W / 2
   const cy = window.innerHeight / 2 - CARD_H / 2
-  const rotations = [-7, -4, -1, 2, 5, 8, -5, 3, -2]
+  const rotations = [-8,-5,-3,-1,1,3,5,7,-6,-4,-2,0,2,4,6,-7,-3,2]
   return shuffle(CARD_DATA).map((c, i) => ({
     ...c,
     x: cx,
@@ -243,13 +315,14 @@ export default function App() {
   }, [])
 
   const spreadCards = useCallback(() => {
-    const cols = 3
-    const gap = 28
+    const gap = 20
+    const n = cardsRef.current.length
+    const cols = Math.min(Math.floor((window.innerWidth - 60) / (CARD_W + gap)), Math.ceil(Math.sqrt(n * 1.6)))
+    const rows = Math.ceil(n / cols)
     const totalW = cols * CARD_W + (cols - 1) * gap
-    const rows = Math.ceil(cardsRef.current.length / cols)
     const totalH = rows * CARD_H + (rows - 1) * gap
     const startX = (window.innerWidth  - totalW) / 2
-    const startY = (window.innerHeight - totalH) / 2
+    const startY = Math.max(20, (window.innerHeight - totalH) / 2)
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
       x: startX + (i % cols) * (CARD_W + gap),
@@ -265,7 +338,7 @@ export default function App() {
   const stackCards = useCallback(() => {
     const cx = window.innerWidth / 2 - CARD_W / 2
     const cy = window.innerHeight / 2 - CARD_H / 2
-    const rotations = [-7, -4, -1, 2, 5, 8, -5, 3, -2]
+    const rotations = [-8,-5,-3,-1,1,3,5,7,-6,-4,-2,0,2,4,6,-7,-3,2]
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
       x: cx,
