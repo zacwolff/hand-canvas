@@ -324,14 +324,14 @@ export default function App() {
   }, [])
 
   const spreadCards = useCallback(() => {
-    const gap = 20
+    const gap = 32
     const n = cardsRef.current.length
-    const cols = Math.min(Math.floor((window.innerWidth - 60) / (CARD_W + gap)), Math.ceil(Math.sqrt(n * 1.6)))
+    const cols = Math.min(Math.floor((window.innerWidth - 80) / (CARD_W + gap)), Math.ceil(Math.sqrt(n * 1.6)))
     const rows = Math.ceil(n / cols)
     const totalW = cols * CARD_W + (cols - 1) * gap
     const totalH = rows * CARD_H + (rows - 1) * gap
     const startX = (window.innerWidth  - totalW) / 2
-    const startY = Math.max(20, (window.innerHeight - totalH) / 2)
+    const startY = Math.max(32, (window.innerHeight - totalH) / 2)
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
       x: startX + (i % cols) * (CARD_W + gap),
@@ -358,7 +358,13 @@ export default function App() {
       const group = next.filter(c => c.type === type)
       group.forEach((c, i) => {
         const idx = next.findIndex(n => n.id === c.id)
-        next[idx] = { ...c, x: cx[ti] + (i % 4) * 3, y: cy + (i % 4) * 2, rotation: rots[ti][i % rots[ti].length], vx: 0, vy: 0 }
+        next[idx] = {
+          ...c,
+          x: cx[ti] + i * 14,
+          y: cy + i * 10,
+          rotation: rots[ti][i % rots[ti].length],
+          vx: 0, vy: 0,
+        }
       })
     })
     cardsRef.current = next
