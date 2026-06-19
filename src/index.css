@@ -126,22 +126,36 @@ body {
 }
 
 /* Webcam */
-.webcam-preview {
+.video-container {
   position: fixed;
   bottom: 16px;
   right: 16px;
   width: 148px;
   height: 84px;
   border-radius: 10px;
-  object-fit: cover;
-  transform: scaleX(-1);
-  opacity: 1;
+  overflow: hidden;
   z-index: 100;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  transform: scaleX(-1);
+}
+
+.webcam-preview {
+  width: 148px;
+  height: 84px;
+  object-fit: cover;
+  display: block;
 }
 
 .webcam-hidden {
   display: none;
+}
+
+.webcam-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 148px;
+  height: 84px;
+  pointer-events: none;
 }
 
 /* Activate button */

@@ -1,4 +1,4 @@
-export default function Card({ card, isDragging, isStacking, onMouseDown }) {
+export default function Card({ card, isDragging, isAnimating, onMouseDown }) {
   const rotation = card.rotation || 0
 
   const style = {
@@ -7,7 +7,7 @@ export default function Card({ card, isDragging, isStacking, onMouseDown }) {
     transform: isDragging
       ? `rotate(${rotation + 1}deg) scale(1.02)`
       : `rotate(${rotation}deg)`,
-    transition: isStacking
+    transition: isAnimating
       ? 'left 0.55s cubic-bezier(0.4, 0, 0.2, 1), top 0.55s cubic-bezier(0.4, 0, 0.2, 1), transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)'
       : isDragging ? 'none' : 'transform 0.2s ease',
     zIndex: isDragging ? 999 : undefined,
