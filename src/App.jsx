@@ -169,11 +169,16 @@ export default function App() {
       const rawX = (1 - indexTip.x) * window.innerWidth
       const rawY = indexTip.y * window.innerHeight
 
-      // Exponential moving average — smooths jitter without much lag
       if (!smoothPosRef.current) smoothPosRef.current = { x: rawX, y: rawY }
-      const SMOOTH = 0.18
-      smoothPosRef.current.x += (rawX - smoothPosRef.current.x) * SMOOTH
-      smoothPosRef.current.y += (rawY - smoothPosRef.current.y) * SMOOTH
+      const dx = rawX - smoothPosRef.current.x
+      const dy = rawY - smoothPosRef.current.y
+      const dist = Math.hypot(dx, dy)
+      // Deadzone: ignore micro-jitter under 10px; smooth larger movements
+      if (dist > 10) {
+        const SMOOTH = 0.1
+        smoothPosRef.current.x += dx * SMOOTH
+        smoothPosRef.current.y += dy * SMOOTH
+      }
       const x = smoothPosRef.current.x
       const y = smoothPosRef.current.y
 
