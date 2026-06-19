@@ -49,7 +49,7 @@ export default function App() {
   const [draggingId, setDraggingId] = useState(null)
   const [camActive, setCamActive] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [loadingMsg, setLoadingMsg] = useState('')
+  const [step, setStep] = useState(0) // 0=idle, 1=wasm, 2=model, 3=camera
   const [error, setError] = useState(null)
 
   const cardsRef = useRef(INITIAL_CARDS)
@@ -63,12 +63,12 @@ export default function App() {
     setLoading(true)
     setError(null)
     try {
-      setLoadingMsg('Loading WASM runtime…')
+      setStep(1)
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
       )
 
-      setLoadingMsg('Loading hand model…')
+      setStep(2)
       let landmarker
       try {
         landmarker = await HandLandmarker.createFromOptions(vision, {
@@ -94,7 +94,7 @@ export default function App() {
       }
       handLandmarkerRef.current = landmarker
 
-      setLoadingMsg('Requesting camera…')
+      setStep(3)
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       videoRef.current.srcObject = stream
       await videoRef.current.play()
@@ -104,7 +104,7 @@ export default function App() {
       setError('Could not start — check camera permissions and try again.')
     }
     setLoading(false)
-    setLoadingMsg('')
+    setStep(0)
   }, [])
 
   useEffect(() => {
@@ -241,11 +241,30 @@ export default function App() {
       )}
 
       {!camActive && (
-        <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          {error && <div style={{ fontSize: 12, color: '#e55', background: 'rgba(255,255,255,0.9)', padding: '6px 14px', borderRadius: 100 }}>{error}</div>}
-          <button className="activate-btn" onClick={startCamera} disabled={loading}>
-            {loading ? (loadingMsg || 'Loading…') : 'Enable Hand Tracking'}
-          </button>
+        <div className="launch-panel">
+          {error && <div className="launch-error">{error}</div>}
+          {loading ? (
+            <div className="progress-tracker">
+              {[
+                { n: 1, label: 'WASM runtime' },
+                { n: 2, label: 'Hand model' },
+                { n: 3, label: 'Camera' },
+              ].map(({ n, label }) => (
+                <div key={n} className={`progress-step ${step >= n ? 'done' : ''} ${step === n ? 'active' : ''}`}>
+                  <div className="progress-dot">
+                    {step > n ? (
+                      <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4l2 2 3-3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                    ) : null}
+                  </div>
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <button className="activate-btn" onClick={startCamera}>
+              Enable Hand Tracking
+            </button>
+          )}
         </div>
       )}
     </div>
