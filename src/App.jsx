@@ -49,6 +49,8 @@ export default function App() {
   const [draggingId, setDraggingId] = useState(null)
   const [camActive, setCamActive] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadingMsg, setLoadingMsg] = useState('')
+  const [error, setError] = useState(null)
 
   const cardsRef = useRef(INITIAL_CARDS)
   const dragInfoRef = useRef(null)
@@ -59,27 +61,50 @@ export default function App() {
 
   const startCamera = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
+      setLoadingMsg('Loading WASM runtime…')
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
       )
-      handLandmarkerRef.current = await HandLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath:
-            'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-          delegate: 'GPU',
-        },
-        runningMode: 'VIDEO',
-        numHands: 1,
-      })
+
+      setLoadingMsg('Loading hand model…')
+      let landmarker
+      try {
+        landmarker = await HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath:
+              'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numHands: 1,
+        })
+      } catch {
+        // GPU failed, fall back to CPU
+        landmarker = await HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath:
+              'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+            delegate: 'CPU',
+          },
+          runningMode: 'VIDEO',
+          numHands: 1,
+        })
+      }
+      handLandmarkerRef.current = landmarker
+
+      setLoadingMsg('Requesting camera…')
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       videoRef.current.srcObject = stream
       await videoRef.current.play()
       setCamActive(true)
     } catch (err) {
       console.error('Hand tracking init failed:', err)
+      setError('Could not start — check camera permissions and try again.')
     }
     setLoading(false)
+    setLoadingMsg('')
   }, [])
 
   useEffect(() => {
@@ -216,9 +241,12 @@ export default function App() {
       )}
 
       {!camActive && (
-        <button className="activate-btn" onClick={startCamera} disabled={loading}>
-          {loading ? 'Loading model…' : 'Enable Hand Tracking'}
-        </button>
+        <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          {error && <div style={{ fontSize: 12, color: '#e55', background: 'rgba(255,255,255,0.9)', padding: '6px 14px', borderRadius: 100 }}>{error}</div>}
+          <button className="activate-btn" onClick={startCamera} disabled={loading}>
+            {loading ? (loadingMsg || 'Loading…') : 'Enable Hand Tracking'}
+          </button>
+        </div>
       )}
     </div>
   )
