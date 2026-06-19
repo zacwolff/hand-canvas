@@ -180,15 +180,18 @@ export default function App() {
   const handLandmarkerRef = useRef(null)
 
   const spreadCards = useCallback(() => {
+    const gap = 16
     const n = cardsRef.current.length
-    const cols = Math.ceil(Math.sqrt(n * 1.6))
+    const cols = Math.ceil(Math.sqrt(n))
     const rows = Math.ceil(n / cols)
-    const cellW = window.innerWidth / cols
-    const cellH = window.innerHeight / rows
+    const gridW = cols * CARD_W + (cols - 1) * gap
+    const gridH = rows * CARD_H + (rows - 1) * gap
+    const startX = (window.innerWidth  - gridW) / 2
+    const startY = (window.innerHeight - gridH) / 2
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
-      x: (i % cols) * cellW + (cellW - CARD_W) / 2,
-      y: Math.floor(i / cols) * cellH + (cellH - CARD_H) / 2,
+      x: startX + (i % cols) * (CARD_W + gap),
+      y: startY + Math.floor(i / cols) * (CARD_H + gap),
       rotation: 0,
     }))
     cardsRef.current = updated
