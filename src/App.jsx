@@ -394,12 +394,33 @@ export default function App() {
         )}
       </div>
 
+      <div className="search-wrap">
+        <div className="search-box">
+          <textarea
+            className="search-input"
+            placeholder="Search, ask, or command…"
+            rows={2}
+          />
+          <div className="search-footer">
+            <div className="search-chips">
+              {['⛅ Weather', '🎵 Music', '🏠 Home', '📅 Today'].map(label => (
+                <button key={label} className="search-chip">{label}</button>
+              ))}
+            </div>
+            <div className="search-footer-right">
+              {camActive && <div className="search-status-dot" />}
+              <button className="search-submit">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M1.5 6.5h10M7 2l4.5 4.5L7 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {camActive && (
         <>
-          <div className="status">
-            <div className="status-dot" />
-            Open palm → spread · Fist → stack · ✌️ → group
-          </div>
           <div className="settings-panel">
             <div className="settings-row">
               <label>Deadzone <span>{deadzone}px</span></label>
