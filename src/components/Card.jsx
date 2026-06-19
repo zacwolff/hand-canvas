@@ -1,8 +1,22 @@
-export default function Card({ card, isDragging, onMouseDown }) {
+export default function Card({ card, isDragging, isStacking, onMouseDown }) {
+  const rotation = card.rotation || 0
+
+  const style = {
+    left: card.x,
+    top: card.y,
+    transform: isDragging
+      ? `rotate(${rotation + 1}deg) scale(1.02)`
+      : `rotate(${rotation}deg)`,
+    transition: isStacking
+      ? 'left 0.55s cubic-bezier(0.4, 0, 0.2, 1), top 0.55s cubic-bezier(0.4, 0, 0.2, 1), transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)'
+      : isDragging ? 'none' : 'transform 0.2s ease',
+    zIndex: isDragging ? 999 : undefined,
+  }
+
   return (
     <div
       className={`card ${card.type === 'mini' ? 'card-mini' : ''} ${isDragging ? 'dragging' : ''}`}
-      style={{ left: card.x, top: card.y }}
+      style={style}
       onMouseDown={onMouseDown}
     >
       {card.label && <div className="card-label">{card.label}</div>}
@@ -18,9 +32,7 @@ export default function Card({ card, isDragging, onMouseDown }) {
       )}
 
       <div className="card-title">{card.title}</div>
-
       {card.content && <div className="card-content">{card.content}</div>}
-
       {card.date && <div className="card-date">{card.date}</div>}
     </div>
   )

@@ -44,8 +44,6 @@ body {
 .card.dragging {
   cursor: grabbing;
   box-shadow: 0 20px 60px rgba(0,0,0,0.16), 0 0 0 1px rgba(0,0,0,0.08);
-  transform: scale(1.02) rotate(0.8deg);
-  z-index: 999;
 }
 
 .card-label {
@@ -112,6 +110,19 @@ body {
   background: rgba(0, 0, 0, 0.45);
   border-color: rgba(0, 0, 0, 0.7);
   transform: translate(-50%, -50%) scale(0.55);
+}
+
+.hand-cursor.palm {
+  background: transparent;
+  border-color: transparent;
+}
+
+.palm-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 /* Webcam */

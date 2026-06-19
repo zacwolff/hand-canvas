@@ -5,7 +5,7 @@ import './index.css'
 
 const INITIAL_CARDS = [
   {
-    id: 1, x: 80, y: 160,
+    id: 1, x: 80, y: 160, rotation: 0,
     title: '1:1 Design Catchup',
     type: 'note',
     content: 'Review the design system updates.\nAlign on component library direction.\nCheck spacing tokens before ship.',
@@ -13,7 +13,7 @@ const INITIAL_CARDS = [
     date: 'Today',
   },
   {
-    id: 2, x: 380, y: 90,
+    id: 2, x: 380, y: 90, rotation: 0,
     title: 'Concept · 2017',
     type: 'image',
     content: 'Fantastico',
@@ -21,7 +21,7 @@ const INITIAL_CARDS = [
     date: 'Jun 12',
   },
   {
-    id: 3, x: 660, y: 170,
+    id: 3, x: 660, y: 170, rotation: 0,
     title: 'Prototype Review',
     type: 'note',
     content: 'Ship by end of Q2.\n\nThree things to verify before handoff.\nDesign tokens, spacing, motion.',
@@ -29,7 +29,7 @@ const INITIAL_CARDS = [
     date: 'Jun 15',
   },
   {
-    id: 4, x: 900, y: 80,
+    id: 4, x: 900, y: 80, rotation: 0,
     title: 'Notes',
     type: 'mini',
     content: 'Quick capture',
@@ -41,23 +41,55 @@ const INITIAL_CARDS = [
 const PINCH_THRESHOLD = 0.065
 const CARD_W = 220
 const CARD_H = 200
+const PALM_HOLD_MS = 500
+
+function isOpenPalm(lm) {
+  // All four fingers extended: tip.y < pip.y (higher on screen = smaller Y value)
+  return (
+    lm[8].y  < lm[6].y  && // index
+    lm[12].y < lm[10].y && // middle
+    lm[16].y < lm[14].y && // ring
+    lm[20].y < lm[18].y    // pinky
+  )
+}
 
 export default function App() {
   const [cards, setCards] = useState(INITIAL_CARDS)
   const [handPos, setHandPos] = useState(null)
   const [isPinching, setIsPinching] = useState(false)
+  const [palmProgress, setPalmProgress] = useState(0) // 0–1 fill as you hold
+  const [isStacking, setIsStacking] = useState(false)
   const [draggingId, setDraggingId] = useState(null)
   const [camActive, setCamActive] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState(0) // 0=idle, 1=wasm, 2=model, 3=camera
+  const [step, setStep] = useState(0)
   const [error, setError] = useState(null)
 
   const cardsRef = useRef(INITIAL_CARDS)
   const dragInfoRef = useRef(null)
   const prevPinchRef = useRef(false)
+  const palmStartRef = useRef(null)
+  const stackCooldownRef = useRef(false)
   const videoRef = useRef(null)
   const animFrameRef = useRef(null)
   const handLandmarkerRef = useRef(null)
+
+  const stackCards = useCallback(() => {
+    const cx = window.innerWidth / 2 - CARD_W / 2
+    const cy = window.innerHeight / 2 - CARD_H / 2
+    const offsets = [-18, -6, 6, 18]
+    const rotations = [-6, -2, 3, 7]
+    const updated = cardsRef.current.map((c, i) => ({
+      ...c,
+      x: cx + offsets[i] * 1.5,
+      y: cy + offsets[i],
+      rotation: rotations[i],
+    }))
+    cardsRef.current = updated
+    setIsStacking(true)
+    setCards([...updated])
+    setTimeout(() => setIsStacking(false), 650)
+  }, [])
 
   const startCamera = useCallback(async () => {
     setLoading(true)
@@ -67,7 +99,6 @@ export default function App() {
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
       )
-
       setStep(2)
       let landmarker
       try {
@@ -81,7 +112,6 @@ export default function App() {
           numHands: 1,
         })
       } catch {
-        // GPU failed, fall back to CPU
         landmarker = await HandLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath:
@@ -93,7 +123,6 @@ export default function App() {
         })
       }
       handLandmarkerRef.current = landmarker
-
       setStep(3)
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       videoRef.current.srcObject = stream
@@ -120,8 +149,10 @@ export default function App() {
 
       if (!result.landmarks?.length) {
         setHandPos(null)
+        setIsPinching(false)
+        setPalmProgress(0)
+        palmStartRef.current = null
         if (prevPinchRef.current) {
-          setIsPinching(false)
           setDraggingId(null)
           prevPinchRef.current = false
           dragInfoRef.current = null
@@ -133,7 +164,6 @@ export default function App() {
       const indexTip = lm[8]
       const thumbTip = lm[4]
 
-      // Flip X — webcam is mirrored
       const x = (1 - indexTip.x) * window.innerWidth
       const y = indexTip.y * window.innerHeight
 
@@ -143,6 +173,24 @@ export default function App() {
       setHandPos({ x, y })
       setIsPinching(pinching)
 
+      // Palm gesture detection (only when not pinching)
+      if (!pinching && isOpenPalm(lm)) {
+        if (!palmStartRef.current) palmStartRef.current = timestamp
+        const progress = Math.min((timestamp - palmStartRef.current) / PALM_HOLD_MS, 1)
+        setPalmProgress(progress)
+        if (progress >= 1 && !stackCooldownRef.current) {
+          stackCards()
+          stackCooldownRef.current = true
+          palmStartRef.current = null
+          setPalmProgress(0)
+          setTimeout(() => { stackCooldownRef.current = false }, 1200)
+        }
+      } else {
+        palmStartRef.current = null
+        setPalmProgress(0)
+      }
+
+      // Pinch drag
       const wasPinching = prevPinchRef.current
       prevPinchRef.current = pinching
 
@@ -162,7 +210,7 @@ export default function App() {
       if (pinching && dragInfoRef.current) {
         const { cardId, offsetX, offsetY } = dragInfoRef.current
         const updated = cardsRef.current.map(c =>
-          c.id === cardId ? { ...c, x: x - offsetX, y: y - offsetY } : c
+          c.id === cardId ? { ...c, x: x - offsetX, y: y - offsetY, rotation: 0 } : c
         )
         cardsRef.current = updated
         setCards([...updated])
@@ -173,7 +221,7 @@ export default function App() {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
     }
-  }, [camActive])
+  }, [camActive, stackCards])
 
   const handleMouseDown = useCallback((cardId, e) => {
     e.preventDefault()
@@ -191,7 +239,7 @@ export default function App() {
       if (!dragInfoRef.current) return
       const { cardId, offsetX, offsetY } = dragInfoRef.current
       const updated = cardsRef.current.map(c =>
-        c.id === cardId ? { ...c, x: e.clientX - offsetX, y: e.clientY - offsetY } : c
+        c.id === cardId ? { ...c, x: e.clientX - offsetX, y: e.clientY - offsetY, rotation: 0 } : c
       )
       cardsRef.current = updated
       setCards([...updated])
@@ -208,6 +256,10 @@ export default function App() {
     window.addEventListener('mouseup', onUp)
   }, [])
 
+  // SVG ring circumference for palm progress indicator
+  const RING_R = 18
+  const RING_C = 2 * Math.PI * RING_R
+
   return (
     <div className="canvas-root">
       {cards.map(card => (
@@ -215,15 +267,33 @@ export default function App() {
           key={card.id}
           card={card}
           isDragging={draggingId === card.id}
+          isStacking={isStacking}
           onMouseDown={(e) => handleMouseDown(card.id, e)}
         />
       ))}
 
       {handPos && (
         <div
-          className={`hand-cursor ${isPinching ? 'pinching' : ''}`}
+          className={`hand-cursor ${isPinching ? 'pinching' : ''} ${palmProgress > 0 ? 'palm' : ''}`}
           style={{ left: handPos.x, top: handPos.y }}
-        />
+        >
+          {palmProgress > 0 && (
+            <svg className="palm-ring" width="44" height="44" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r={RING_R} fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="2.5" />
+              <circle
+                cx="22" cy="22" r={RING_R}
+                fill="none"
+                stroke="rgba(0,0,0,0.7)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray={RING_C}
+                strokeDashoffset={RING_C * (1 - palmProgress)}
+                transform="rotate(-90 22 22)"
+                style={{ transition: 'stroke-dashoffset 0.05s linear' }}
+              />
+            </svg>
+          )}
+        </div>
       )}
 
       <video
@@ -236,7 +306,7 @@ export default function App() {
       {camActive && (
         <div className="status">
           <div className="status-dot" />
-          Hand tracking active
+          Open palm to stack · Pinch to drag
         </div>
       )}
 
@@ -253,7 +323,7 @@ export default function App() {
                 <div key={n} className={`progress-step ${step >= n ? 'done' : ''} ${step === n ? 'active' : ''}`}>
                   <div className="progress-dot">
                     {step > n ? (
-                      <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4l2 2 3-3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                      <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4l2 2 3-3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
                     ) : null}
                   </div>
                   <span>{label}</span>
