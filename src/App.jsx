@@ -72,6 +72,8 @@ const CARD_DATA = [
 const CARD_W = 220
 const CARD_H = 180
 const GESTURE_HOLD_MS = 500
+const SEARCH_TOP = 28   // matches .search-wrap top in CSS
+const SEARCH_H   = 148  // approximate rendered height of search box
 
 const HAND_CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],
@@ -86,16 +88,27 @@ function shuffle(arr) {
   return [...arr].sort(() => Math.random() - 0.5)
 }
 
+function groupAnchors() {
+  const W = window.innerWidth
+  const searchW = Math.min(600, W - 48)
+  const sideW = (W - searchW) / 2
+  return [
+    { x: Math.max(16, sideW / 2 - CARD_W / 2), y: SEARCH_TOP },
+    { x: Math.min(W - CARD_W - 16, W - sideW / 2 - CARD_W / 2), y: SEARCH_TOP },
+    { x: W / 2 - CARD_W / 2, y: SEARCH_TOP + SEARCH_H + 24 },
+  ]
+}
+
 function makeCards() {
-  const cx = window.innerWidth  / 2 - CARD_W / 2
-  const cy = window.innerHeight / 2 - CARD_H / 2
-  const rotations = [-7,-4,-1,2,5,-5,-2,1,4,-3,3]
-  return shuffle(CARD_DATA).map((c, i) => ({
-    ...c,
-    x: cx,
-    y: cy,
-    rotation: rotations[i],
-  }))
+  const anchors = groupAnchors()
+  const rots = [[-7,-3,1,5,-5,-2,3], [-6,-2,2,6,-4,-1,4], [-8,-4,0,4,-6,-3,3,-1]]
+  const result = []
+  ;[1, 2, 3].forEach((g, gi) => {
+    shuffle(CARD_DATA.filter(c => c.group === g)).forEach((c, i) => {
+      result.push({ ...c, x: anchors[gi].x, y: anchors[gi].y, rotation: rots[gi][i % rots[gi].length] })
+    })
+  })
+  return result
 }
 
 function isOpenPalm(lm) {
@@ -180,19 +193,38 @@ export default function App() {
   const handLandmarkerRef = useRef(null)
 
   const spreadCards = useCallback(() => {
+    const W = window.innerWidth
     const gap = 16
+    const searchW = Math.min(600, W - 48)
+    const sideW = (W - searchW) / 2
     const n = cardsRef.current.length
-    const cols = Math.ceil(Math.sqrt(n))
-    const rows = Math.ceil(n / cols)
+    const positions = []
+
+    const canFitSide = sideW >= CARD_W + 32
+    const perSide = canFitSide ? 2 : 0
+    const leftX  = Math.max(16, sideW / 2 - CARD_W / 2)
+    const rightX = Math.min(W - CARD_W - 16, W - sideW / 2 - CARD_W / 2)
+
+    for (let i = 0; i < perSide; i++) {
+      positions.push({ x: leftX,  y: SEARCH_TOP + i * (CARD_H + gap) })
+      positions.push({ x: rightX, y: SEARCH_TOP + i * (CARD_H + gap) })
+    }
+
+    const bottomCount = n - perSide * 2
+    const cols = Math.ceil(Math.sqrt(bottomCount * 1.5))
     const gridW = cols * CARD_W + (cols - 1) * gap
-    const gridH = rows * CARD_H + (rows - 1) * gap
-    const startX = (window.innerWidth  - gridW) / 2
-    const startY = (window.innerHeight - gridH) / 2
+    const startX = (W - gridW) / 2
+    const startY = SEARCH_TOP + SEARCH_H + gap
+
+    for (let i = 0; i < bottomCount; i++) {
+      positions.push({
+        x: startX + (i % cols) * (CARD_W + gap),
+        y: startY + Math.floor(i / cols) * (CARD_H + gap),
+      })
+    }
+
     const updated = cardsRef.current.map((c, i) => ({
-      ...c,
-      x: startX + (i % cols) * (CARD_W + gap),
-      y: startY + Math.floor(i / cols) * (CARD_H + gap),
-      rotation: 0,
+      ...c, x: positions[i].x, y: positions[i].y, rotation: 0,
     }))
     cardsRef.current = updated
     setIsAnimating(true)
@@ -201,24 +233,13 @@ export default function App() {
   }, [])
 
   const groupCards = useCallback(() => {
-    const cx = [0.22, 0.5, 0.78].map(p => p * window.innerWidth - CARD_W / 2)
-    const cy = window.innerHeight / 2 - CARD_H / 2
-    const rots = [
-      [-6,-3,0,2,-4],
-      [-5,-1,3,7,-3],
-      [-4,0,5,-6,-2],
-    ]
+    const anchors = groupAnchors()
+    const rots = [[-6,-3,0,2,-4], [-5,-1,3,7,-3], [-4,0,5,-6,-2]]
     const next = [...cardsRef.current]
     ;[1, 2, 3].forEach((g, gi) => {
-      const group = next.filter(c => c.group === g)
-      group.forEach((c, i) => {
+      next.filter(c => c.group === g).forEach((c, i) => {
         const idx = next.findIndex(n => n.id === c.id)
-        next[idx] = {
-          ...c,
-          x: cx[gi] + i * 14,
-          y: cy + i * 10,
-          rotation: rots[gi][i % rots[gi].length],
-        }
+        next[idx] = { ...c, x: anchors[gi].x + i * 12, y: anchors[gi].y + i * 8, rotation: rots[gi][i % rots[gi].length] }
       })
     })
     cardsRef.current = next
@@ -228,15 +249,16 @@ export default function App() {
   }, [])
 
   const stackCards = useCallback(() => {
-    const cx = window.innerWidth / 2 - CARD_W / 2
-    const cy = window.innerHeight / 2 - CARD_H / 2
-    const rotations = [-7,-4,-1,2,5,-5,-2,1,4,-3,3]
-    const updated = cardsRef.current.map((c, i) => ({
-      ...c,
-      x: cx,
-      y: cy,
-      rotation: rotations[i],
-    }))
+    const anchors = groupAnchors()
+    const rots = [[-7,-3,1,5,-5,-2,3], [-6,-2,2,6,-4,-1,4], [-8,-4,0,4,-6,-3,3,-1]]
+    const next = [...cardsRef.current]
+    ;[1, 2, 3].forEach((g, gi) => {
+      next.filter(c => c.group === g).forEach((c, i) => {
+        const idx = next.findIndex(n => n.id === c.id)
+        next[idx] = { ...c, x: anchors[gi].x, y: anchors[gi].y, rotation: rots[gi][i % rots[gi].length] }
+      })
+    })
+    const updated = next
     cardsRef.current = updated
     setIsAnimating(true)
     setCards([...updated])
