@@ -268,14 +268,14 @@ export default function App() {
   }, [])
 
   const spreadCards = useCallback(() => {
-    const gap = 32
+    const gap = 8
     const n = cardsRef.current.length
-    const cols = Math.min(Math.floor((window.innerWidth - 80) / (CARD_W + gap)), Math.ceil(Math.sqrt(n * 1.6)))
+    const cols = Math.min(Math.floor((window.innerWidth - 60) / (CARD_W + gap)), Math.ceil(Math.sqrt(n * 1.6)))
     const rows = Math.ceil(n / cols)
     const totalW = cols * CARD_W + (cols - 1) * gap
     const totalH = rows * CARD_H + (rows - 1) * gap
     const startX = (window.innerWidth  - totalW) / 2
-    const startY = Math.max(32, (window.innerHeight - totalH) / 2)
+    const startY = Math.max(20, (window.innerHeight - totalH) / 2)
     const updated = cardsRef.current.map((c, i) => ({
       ...c,
       x: startX + (i % cols) * (CARD_W + gap),
